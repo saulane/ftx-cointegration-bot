@@ -1,8 +1,9 @@
-extern crate serde_json;
+extern crate reqwest;
 
 use tungstenite::{connect, Message};
 use url::Url;
 use serde_json::{json, Value};
+
 
 fn subscribe(channel: &str) -> Value{
     let sub_msg = json!({
@@ -14,20 +15,32 @@ fn subscribe(channel: &str) -> Value{
     return sub_msg;
 }
 
-fn main() {
-    env_logger::init();
+async fn get_data() -> Result<(), Box<dyn std::error::Error>>{
+    let rest_client = reqwest::Client::new();
+    let res = rest_client.get("https://ftx.com/api/markets/BTC-PERP/candles?resolution=300&limit=20")
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    let body_json: Value = serde_json::from_str(&res).expect("Can't parse REST API request to JSON");
+
+    println!("{:?}", body_json);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+
+    let _test = get_data().await;
+    // println!("{:?}", test);
 
     let (mut socket, response) =
         connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");
 
     println!("Connected to the server");
     println!("Response HTTP code: {}", response.status());
-    println!("Response contains the following headers:");
-    for (ref header, _value) in response.headers() {
-        println!("* {}", header);
-    }
-
-
 
     let subcribe_msg  = subscribe("ticker");
 
