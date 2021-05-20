@@ -15,7 +15,7 @@ pub fn signature(api_secret: &str, time: u128, endpoint: &str, method: &str) -> 
     type HmacSha256 = Hmac<Sha256>;
     let ts: String = time.to_string();
 
-    let message = format!("{}{}{}", ts, method, endpoint);
+    let message = format!("{}{}/api{}", ts, method, endpoint);
     println!("Sign Payload: {}", message);
 
     let mut mac = HmacSha256::new_from_slice(api_secret.as_bytes()).expect("Problem keying the API_SECRET");
