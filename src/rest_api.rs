@@ -2,7 +2,7 @@ extern crate reqwest;
 
 use serde_json::{Value, json};
 use reqwest::header;
-use std::env;
+use std::collections::HashMap;
 
 #[path = "utils.rs"]
 mod utils;
@@ -39,6 +39,10 @@ impl FtxApiClient{
         Ok(headers)
     }
 
+    fn url(&self, endpoint: &str) -> String{
+        format!("{}{}",API_ENDPOINT, endpoint)
+    }
+
     pub async fn get_balance(&self) -> Result<Value, Box<dyn std::error::Error>>{
         let url = format!("{}{}", API_ENDPOINT, "/wallet/balances");
         let auth_header = self.auth_header("/wallet/balances", "GET").unwrap();
@@ -50,5 +54,119 @@ impl FtxApiClient{
             .await?;
 
         Ok(balance_request)
+    }
+
+    pub async fn get_open_orders(&self) -> Result<Value, reqwest::Error>{
+        let url = self.url("/orders?market=BTC-PERP");
+        let auth_header = self.auth_header("/orders?market=BTC-PERP", "GET").unwrap();
+        let open_orders = self.request_client.get(url)
+            .headers(auth_header)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(open_orders)
+    }
+
+    pub async fn get_orders_history(&self) -> Result<Value, reqwest::Error>{
+        let url = self.url("/orders/history?market=BTC-PERP");
+        let auth_header = self.auth_header("/orders/history?market=BTC-PERP", "GET").unwrap();
+        let orders_history = self.request_client.get(url)
+            .headers(auth_header)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(orders_history)
+    }
+
+    pub async fn post_order(&self, side:&str, price: u64, size: f64, r#type:&str) -> Result<Value, reqwest::Error>{
+        let orders_url = self.url("/orders");
+
+        let price = if r#type == "limit" { price } else { 0 };
+        let params_json = json!({
+            "market": "BTC-PERP",
+            "size": size,
+            "side": side,
+            "type": r#type,
+            "price": price,
+        });
+
+        let url_params = format!("/orders{}",params_json.to_string());
+        let auth_header = self.auth_header(&url_params, "POST").unwrap();
+
+        let orders_history = self.request_client.post(orders_url)
+            .headers(auth_header)
+            .json(&params_json)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(orders_history)
+    }
+
+    pub async fn modify_order(&self, order_id:&str, size: Option<f64>, price: Option<f64>) -> Result<Value, reqwest::Error>{
+        let order_endpoint = format!("/orders/{}/modify", order_id);
+        let url = self.url(&order_endpoint);
+
+        let mut params = HashMap::new();
+
+        match size{
+            Some(i) => params.insert("size", i),
+            None => None
+        };
+
+        match price{
+            Some(i) => params.insert("price", i),
+            None => None
+        };
+
+        let params_json:Value = serde_json::from_str(&format!("{:?}", params)).unwrap();
+        println!("Json: {}", params_json);
+
+        let url_params = format!("/orders/{}/modify{}",order_id,params_json.to_string());
+        let auth_header = self.auth_header(&url_params, "POST").unwrap();
+        
+        let modify_order = self.request_client.post(url)
+            .headers(auth_header)
+            .json(&params_json)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(modify_order)
+    }
+
+    pub async fn cancel_all_orders(&self) -> Result<Value, reqwest::Error>{
+        let url = self.url("/orders");
+        let auth_header = self.auth_header("/orders", "DELETE").unwrap(); 
+
+        let cancel_orders = self.request_client.delete(url)
+            .headers(auth_header)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(cancel_orders)
+    }
+
+    pub async fn get_order_status(&self, order_id: &str) -> Result<Value, reqwest::Error>{
+        let order_endpoint = format!("/orders/{}", order_id);
+        let url = self.url(&order_endpoint);
+        let auth_header = self.auth_header(&order_endpoint, "GET").unwrap(); 
+
+        let order_status = self.request_client.get(url)
+            .headers(auth_header)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(order_status)
     }
 }

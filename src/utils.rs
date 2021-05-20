@@ -16,6 +16,7 @@ pub fn signature(api_secret: &String, endpoint: &str, method: &str) -> Result<(S
     let ts: String = current_ts().to_string();
 
     let message = format!("{}{}/api{}", ts, method, endpoint);
+    println!("URL payload: {}", message);
 
     let mut mac = HmacSha256::new_from_slice(api_secret.as_bytes()).expect("Problem keying the API_SECRET");
     mac.update(&message.as_bytes());
