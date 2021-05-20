@@ -1,24 +1,33 @@
 extern crate reqwest;
+#[macro_use]
+extern crate lazy_static;
 
-mod auth;
+mod rest_api;
 mod ws;
-mod sign;
+mod utils;
 
-const API_KEY: &str = "Wij-a7W4DTm0Ly_5vJqu9DZrhRdzG_ma4OuAeMAP";
-const API_SECRET: &str = "JtPh-moNuFE5eyRvqA3fFfBqMPEFk7ix3B-mc5-E";
+use rest_api::FtxApiClient;
+
+lazy_static!{
+    static ref API_KEY: String = std::env::var("FTX_API_KEY").unwrap();
+    static ref API_SECRET: String = std::env::var("FTX_API_SECRET").unwrap();
+}
 
 #[tokio::main]
 async fn main() {
+    
+    let ftx_bot =  FtxApiClient{
+        api_key: API_KEY.to_string(),
+        api_secret: API_SECRET.to_string(),
+        request_client: reqwest::Client::new()
+    };
 
+    // let api_client = reqwest::Client::new();
 
-    //println!("{:?}",sign::signature("T4lPid48QtjNxjLUFOcUZghD7CUJ7sTVsfuvQZF2","/api/markets", 1588591511721, "GET").unwrap());
+    let test = ftx_bot.fetch_historical_data("BTC-PERP", "300").await.unwrap();
+    println!("{:?}", test);
 
-    let api_client = reqwest::Client::new();
-
-    // let test = auth::get_jsoned_data(api_client, "BTC-PERP", "300").await.unwrap();
-    // println!("{:?}", test);
-
-    let test_balance = auth::get_balance(api_client, API_KEY, API_SECRET).await.unwrap();
+    let test_balance = ftx_bot.get_balance().await.unwrap();
     println!("{:?}", test_balance);
 
 

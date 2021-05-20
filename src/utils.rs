@@ -11,21 +11,17 @@ pub fn current_ts() -> u128 {
 }
 
 
-pub fn signature(api_secret: &str, time: u128, endpoint: &str, method: &str) -> Result<String, ()> {
+pub fn signature(api_secret: &String, time: u128, endpoint: &str, method: &str) -> Result<String, ()> {
     type HmacSha256 = Hmac<Sha256>;
     let ts: String = time.to_string();
 
     let message = format!("{}{}/api{}", ts, method, endpoint);
-    println!("Sign Payload: {}", message);
 
     let mut mac = HmacSha256::new_from_slice(api_secret.as_bytes()).expect("Problem keying the API_SECRET");
     mac.update(&message.as_bytes());
     let result = mac.finalize().into_bytes();
 
     let r2 = hex::encode(&result);
-    
-    // println!("{}",message);
-    // println!("{}",r2);
 
     Ok(r2)
 }
