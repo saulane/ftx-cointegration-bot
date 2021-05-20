@@ -11,9 +11,9 @@ pub fn current_ts() -> u128 {
 }
 
 
-pub fn signature(api_secret: &String, time: u128, endpoint: &str, method: &str) -> Result<String, ()> {
+pub fn signature(api_secret: &String, endpoint: &str, method: &str) -> Result<(String, String), ()> {
     type HmacSha256 = Hmac<Sha256>;
-    let ts: String = time.to_string();
+    let ts: String = current_ts().to_string();
 
     let message = format!("{}{}/api{}", ts, method, endpoint);
 
@@ -23,5 +23,5 @@ pub fn signature(api_secret: &String, time: u128, endpoint: &str, method: &str) 
 
     let r2 = hex::encode(&result);
 
-    Ok(r2)
+    Ok((r2, ts))
 }

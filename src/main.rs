@@ -22,7 +22,6 @@ async fn main() {
         request_client: reqwest::Client::new()
     };
 
-    // let api_client = reqwest::Client::new();
 
     let test = ftx_bot.fetch_historical_data("BTC-PERP", "300").await.unwrap();
     println!("{:?}", test);
