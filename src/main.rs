@@ -2,6 +2,10 @@ extern crate reqwest;
 #[macro_use]
 extern crate lazy_static;
 
+use tungstenite::{connect, Message};
+use url::Url;
+use serde_json::Value;
+
 mod rest_api;
 mod ws;
 mod utils;
@@ -26,41 +30,35 @@ async fn main() {
     // let test = ftx_bot.fetch_historical_data("BTC-PERP", "300").await.unwrap();
     // println!("{:?}", test);
 
-    // let test_balance = ftx_bot.get_balance().await.unwrap();
-    // println!("{:?}", test_balance);
+    let (mut socket, response) =
+        connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");
 
-    // let test_open_orders = ftx_bot.get_orders_history().await.unwrap();
-    // println!("{:?}", test_open_orders);
+    println!("Connected to the server");
+    println!("Response HTTP code: {}", response.status());
 
-    // let test_post_order = ftx_bot.post_order("buy", 10000, 0.0001, "limit").await;
-    // println!("{:?}", test_post_order);
+    
+    let auth_msg = ws::auth_msg(&API_KEY.to_string(), &API_SECRET.to_string());
+    // let subcribe_msg  = ws::subscribe("orders");
+    
+    socket.write_message(Message::Text(auth_msg.to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("orders", None).to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("fills", None).to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("ticker", Some("BCH/BTC")).to_string())).unwrap();
 
-    // let test_post_order = ftx_bot.get_order_status("50073534040").await;
-    // println!("{:?}", test_post_order);
+    loop {
+        let msg = socket.read_message().expect("Error reading message");
+        let msg = match msg {
+            tungstenite::Message::Text(s) => { s }
+            _ => { panic!() }
+        };
+        let parsed: Value = serde_json::from_str(&msg).expect("Can't parse message to JSON");
 
-    let test_modify_oder = ftx_bot.modify_order("50110282430", Some(0.002), Some(10000.0)).await;
-    println!("{:?}", test_modify_oder);
-    // let test_cancel_all = ftx_bot.cancel_all_orders().await; 
+        if parsed["channel"] == "markets"{
+            println!("Message reçu: {:?}", parsed);
+        }
 
-    // let (mut socket, response) =
-    //     connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");
-
-    // println!("Connected to the server");
-    // println!("Response HTTP code: {}", response.status());
-
-    // let subcribe_msg  = ws::subscribe("ticker");
-
-    // socket.write_message(Message::Text(subcribe_msg.to_string())).unwrap();
-    // loop {
-    //     let msg = socket.read_message().expect("Error reading message");
-    //     let msg = match msg {
-    //         tungstenite::Message::Text(s) => { s }
-    //         _ => { panic!() }
-    //     };
-    //     let parsed: Value = serde_json::from_str(&msg).expect("Can't parse to JSON");
-
-    //     println!("Last price: {:?}$", parsed["data"]["last"]);
-    // }
+        println!("Message reçu: {:?}", parsed);
+    }
     // socket.close(None);
 }
 

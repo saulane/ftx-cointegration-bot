@@ -29,7 +29,7 @@ impl FtxApiClient{
     }
 
     fn auth_header(&self, endpoint: &str, method: &str) -> Result<header::HeaderMap, ()>{
-        let signature: (String,String) = utils::signature(&self.api_secret, endpoint, method).unwrap();
+        let signature: (String,String) = utils::signature(&self.api_secret, endpoint, method, "rest").unwrap();
 
         let mut headers = header::HeaderMap::new();
         headers.insert("FTX-KEY", self.api_key.parse().unwrap());
