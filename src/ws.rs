@@ -1,10 +1,22 @@
 use serde_json::{Value, json};
+use serde::{Deserialize, Serialize};
 
 #[path = "utils.rs"]
 mod utils;
 
+
+#[derive(Serialize, Deserialize)]
+pub struct TickerMessageData{
+    bid: f64,
+    ask: f64,
+    bidSize: f64,
+    askSize: f64,
+    pub last: f64,
+    time: f64
+}
+
 pub fn subscribe(channel: &str, market: Option<&str>) -> Value{
-    let mut market = match market{
+    let market = match market{
         Some(m) => m,
         None => "BTC-PERP"
     };
@@ -43,4 +55,11 @@ pub fn auth_msg(api_key: &str, api_secret: &str) -> Value{
     println!("{:?}", timestamp);
 
     return auth_msg;
+}
+
+pub fn data_msg(data_obj: String) -> Result<TickerMessageData, serde_json::Error>{
+
+    let data:TickerMessageData = serde_json::from_str(&data_obj)?;
+
+    Ok(data)
 }

@@ -6,11 +6,15 @@ use tungstenite::{connect, Message};
 use url::Url;
 use serde_json::Value;
 
+
 mod rest_api;
 mod ws;
 mod utils;
+mod strategy;
 
-use rest_api::FtxApiClient;
+// use rest_api::FtxApiClient;
+
+
 
 lazy_static!{
     static ref API_KEY: String = std::env::var("FTX_API_KEY").unwrap();
@@ -20,12 +24,16 @@ lazy_static!{
 #[tokio::main]
 async fn main() {
     
-    let ftx_bot =  FtxApiClient{
-        api_key: API_KEY.to_string(),
-        api_secret: API_SECRET.to_string(),
-        request_client: reqwest::Client::new()
-    };
+    // let ftx_bot =  FtxApiClient{
+    //     api_key: API_KEY.to_string(),
+    //     api_secret: API_SECRET.to_string(),
+    //     request_client: reqwest::Client::new()
+    // };
 
+    let mut market_state = strategy::calculations::MarketState::new();
+
+    let mut btc_price = 0.0;
+    let mut bch_price = 0.0; 
 
     // let test = ftx_bot.fetch_historical_data("BTC-PERP", "300").await.unwrap();
     // println!("{:?}", test);
@@ -43,7 +51,8 @@ async fn main() {
     socket.write_message(Message::Text(auth_msg.to_string())).unwrap();
     socket.write_message(Message::Text(ws::subscribe("orders", None).to_string())).unwrap();
     socket.write_message(Message::Text(ws::subscribe("fills", None).to_string())).unwrap();
-    socket.write_message(Message::Text(ws::subscribe("ticker", Some("BCH/BTC")).to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("ticker", Some("BTC/USD")).to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("ticker", Some("BCH/USD")).to_string())).unwrap();
 
     loop {
         let msg = socket.read_message().expect("Error reading message");
@@ -53,11 +62,29 @@ async fn main() {
         };
         let parsed: Value = serde_json::from_str(&msg).expect("Can't parse message to JSON");
 
-        if parsed["channel"] == "markets"{
-            println!("Message reçu: {:?}", parsed);
+        if parsed["channel"] == "ticker"{
+            let data_obj = parsed["data"].to_string();
+            if data_obj != "null"{
+                if parsed["market"] == "BTC/USD"{
+                    let data = ws::data_msg(data_obj).unwrap();
+                    btc_price = data.last;
+                    // println!("BTC: {}", init_btc_price);
+                }else if parsed["market"] == "BCH/USD"{
+                    let data = ws::data_msg(data_obj).unwrap();
+                    bch_price = data.last;
+                    // println!("BCH: {}", init_bch_price);
+                }
+            }
+        };
+
+        if bch_price != 0.0 && btc_price != 0.0 && utils::current_ts()-market_state.last_update_ts>=5000{
+            market_state.update_price(btc_price, bch_price);
+
+            println!("{:?}", market_state);
         }
 
-        println!("Message reçu: {:?}", parsed);
+        
+
     }
     // socket.close(None);
 }

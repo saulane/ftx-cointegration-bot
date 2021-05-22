@@ -17,7 +17,6 @@ pub struct FtxApiClient{
 }
 
 impl FtxApiClient{
-
     pub async fn fetch_historical_data(&self, market: &str, resolution: &str) -> Result<Value, Box<dyn std::error::Error>>{
         let data = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit=20", market, resolution))
             .send()
