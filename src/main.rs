@@ -30,7 +30,7 @@ async fn main(){
     //     request_client: reqwest::Client::new()
     // };
 
-    let mut market_state: strategy::calculations::MarketState = strategy::calculations::MarketState::new();
+    let mut market_state: strategy::MarketState = strategy::MarketState::new();
 
     let mut btc_price: f64 = 0.0;
     let mut bch_price: f64 = 0.0; 
