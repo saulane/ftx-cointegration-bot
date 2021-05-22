@@ -22,7 +22,7 @@ lazy_static!{
 }
 
 #[tokio::main]
-async fn main() {
+async fn main(){
     
     // let ftx_bot =  FtxApiClient{
     //     api_key: API_KEY.to_string(),
@@ -30,10 +30,10 @@ async fn main() {
     //     request_client: reqwest::Client::new()
     // };
 
-    let mut market_state = strategy::calculations::MarketState::new();
+    let mut market_state: strategy::calculations::MarketState = strategy::calculations::MarketState::new();
 
-    let mut btc_price = 0.0;
-    let mut bch_price = 0.0; 
+    let mut btc_price: f64 = 0.0;
+    let mut bch_price: f64 = 0.0; 
 
     // let test = ftx_bot.fetch_historical_data("BTC-PERP", "300").await.unwrap();
     // println!("{:?}", test);
@@ -77,7 +77,7 @@ async fn main() {
             }
         };
 
-        if bch_price != 0.0 && btc_price != 0.0 && utils::current_ts()-market_state.last_update_ts>=5000{
+        if bch_price != 0.0 && btc_price != 0.0 && utils::current_ts()-market_state.last_update_ts>=500{
             market_state.update_price(btc_price, bch_price);
 
             println!("{:?}", market_state);
