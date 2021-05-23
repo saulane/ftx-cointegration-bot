@@ -39,7 +39,7 @@ impl HistoricalData{
     }
 }
 
-
+#[derive(Debug)]
 pub struct Pair{
     pub crypto_1: [f64; 20],
     pub crypto_2: [f64; 20],

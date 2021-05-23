@@ -13,7 +13,7 @@ mod strategy;
 use std::time::{SystemTime};
 use exchange::ftx::rest_api::FtxApiClient;
 use exchange::ftx::websocket as ws;
-
+use strategy::data_type::HistoricalData;
 
 
 lazy_static!{
@@ -41,8 +41,12 @@ async fn main(){
     let mut btc_price: f64 = 0.0;
     let mut bch_price: f64 = 0.0; 
 
-    let test = ftx_bot.fetch_historical_data("BTC-PERP", "900").await.unwrap();
-    println!("{:?}", &test);
+    let eth:HistoricalData = strategy::data_type::HistoricalData::new(ftx_bot.fetch_historical_data("ETH/USD", "900").await.unwrap()).unwrap();
+    let ltc:HistoricalData = strategy::data_type::HistoricalData::new(ftx_bot.fetch_historical_data("LTC/USD", "900").await.unwrap()).unwrap();
+
+    let pair = strategy::data_type::Pair::new(&eth, &ltc);
+
+    println!("{:?}", &pair);
 
     let (mut socket, response) =
         connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");

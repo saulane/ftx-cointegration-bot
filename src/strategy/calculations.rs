@@ -98,7 +98,7 @@ pub fn log_diff<'a>(data1: &'a [f64], data2: &'a [f64]) -> Option<Vec<f64>>{
         let data_len: usize = data1.len();
         let mut log_diff = Vec::new();
 
-        for i in 0..data_len+1{
+        for i in 0..data_len{
             log_diff.push(data1[i].ln() - data2[i].ln());
         }
 
