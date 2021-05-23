@@ -10,6 +10,7 @@ mod utils;
 const API_ENDPOINT: &str = "https://ftx.com/api";
 
 
+
 pub struct FtxApiClient{
     pub api_key: String,
     pub api_secret: String,
@@ -22,7 +23,7 @@ impl FtxApiClient{
             .send()
             .await?
             .json()
-            .await?;    
+            .await?;
 
         Ok(data)
     }

@@ -1,4 +1,5 @@
 pub mod calculations;
+pub mod data_type;
 
 use std::{cell::RefCell};
 use calculations::{mean, mean_dist, zscore};

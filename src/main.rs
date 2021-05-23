@@ -7,12 +7,12 @@ use url::Url;
 use serde_json::Value;
 
 
-mod rest_api;
-mod ws;
-mod utils;
+mod exchange;
 mod strategy;
 
-// use rest_api::FtxApiClient;
+use std::time::{SystemTime};
+use exchange::ftx::rest_api::FtxApiClient;
+use exchange::ftx::websocket as ws;
 
 
 
@@ -21,22 +21,28 @@ lazy_static!{
     static ref API_SECRET: String = std::env::var("FTX_API_SECRET").unwrap();
 }
 
+fn current_ts() -> u128 {
+    let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis();
+    ts
+}
+
+
 #[tokio::main]
 async fn main(){
     
-    // let ftx_bot =  FtxApiClient{
-    //     api_key: API_KEY.to_string(),
-    //     api_secret: API_SECRET.to_string(),
-    //     request_client: reqwest::Client::new()
-    // };
+    let ftx_bot =  FtxApiClient{
+        api_key: API_KEY.to_string(),
+        api_secret: API_SECRET.to_string(),
+        request_client: reqwest::Client::new()
+    };
 
     let mut market_state: strategy::MarketState = strategy::MarketState::new();
 
     let mut btc_price: f64 = 0.0;
     let mut bch_price: f64 = 0.0; 
 
-    // let test = ftx_bot.fetch_historical_data("BTC-PERP", "300").await.unwrap();
-    // println!("{:?}", test);
+    let test = ftx_bot.fetch_historical_data("BTC-PERP", "900").await.unwrap();
+    println!("{:?}", &test);
 
     let (mut socket, response) =
         connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");
@@ -77,7 +83,7 @@ async fn main(){
             }
         };
 
-        if bch_price != 0.0 && btc_price != 0.0 && utils::current_ts()-market_state.last_update_ts>=500{
+        if bch_price != 0.0 && btc_price != 0.0 && current_ts()-market_state.last_update_ts>=500{
             market_state.update_price(btc_price, bch_price);
 
             println!("{:?}", market_state);
