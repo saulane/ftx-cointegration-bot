@@ -1,11 +1,15 @@
 extern crate reqwest;
 
+#[path = "utils.rs"]
+mod utils;
+mod objects;
+
 use serde_json::{Value, json};
 use reqwest::header;
 use std::collections::HashMap;
 
-#[path = "utils.rs"]
-mod utils;
+use objects::{Balance};
+
 
 const API_ENDPOINT: &str = "https://ftx.com/api";
 
@@ -43,7 +47,7 @@ impl FtxApiClient{
         format!("{}{}",API_ENDPOINT, endpoint)
     }
 
-    pub async fn get_balance(&self) -> Result<Value, Box<dyn std::error::Error>>{
+    pub async fn get_balance(&self) -> Result<Balance, Box<dyn std::error::Error>>{
         let url = format!("{}{}", API_ENDPOINT, "/wallet/balances");
         let auth_header = self.auth_header("/wallet/balances", "GET").unwrap();
         let balance_request = self.request_client.get(url)
@@ -53,7 +57,9 @@ impl FtxApiClient{
             .json()
             .await?;
 
-        Ok(balance_request)
+        let balance: Balance = serde_json::from_value(balance_request)?;
+
+        Ok(balance)
     }
 
     pub async fn get_open_orders(&self) -> Result<Value, reqwest::Error>{
@@ -82,10 +88,12 @@ impl FtxApiClient{
         Ok(orders_history)
     }
 
-    pub async fn post_order(&self, side:&str, price: u64, size: f64, r#type:&str) -> Result<Value, reqwest::Error>{
+    pub async fn post_order(&self, price: f64, size: f64, r#type:&str) -> Result<Value, reqwest::Error>{
         let orders_url = self.url("/orders");
 
-        let price = if r#type == "limit" { price } else { 0 };
+        let side = if size>=0.0 {"buy"} else {"sell"};
+
+        let price = if r#type == "limit" { price } else { 0.0 };
         let params_json = json!({
             "market": "BTC-PERP",
             "size": size,

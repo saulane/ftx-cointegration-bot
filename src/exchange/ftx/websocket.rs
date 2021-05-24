@@ -7,27 +7,46 @@ mod utils;
 
 #[derive(Serialize, Deserialize)]
 pub struct TickerMessageData{
-    bid: f64,
-    ask: f64,
-    bidSize: f64,
-    askSize: f64,
+    pub bid: f64,
+    pub ask: f64,
+    pub bidSize: f64,
+    pub askSize: f64,
     pub last: f64,
-    time: f64
+    pub time: f64
+}
+#[derive(Serialize, Deserialize)]
+pub struct TickerMessage{
+    pub channel: String,
+    pub market: String,
+    pub r#type: String,
+    pub data: TickerMessageData,
 }
 
-pub fn subscribe(channel: &str, market: Option<&str>) -> Value{
-    let market = match market{
-        Some(m) => m,
-        None => "BTC-PERP"
+pub fn subscribe(channel: &str, markets: Option<&Vec<&str>>) -> Vec<Value>{
+    let mut msgs:Vec<Value> = Vec::new();
+
+    match markets{
+        Some(m) if m.len()>0 => {
+            for i in m.iter(){
+                let sub_msg: Value = json!({
+                    "op": "subscribe",
+                    "channel": channel,
+                    "market": i
+                });
+                msgs.push(sub_msg);
+            }
+        },
+        _ => {
+            let sub_msg: Value = json!({
+                "op": "subscribe",
+                "channel": channel,
+                "market": "BTC-PERP"
+            });
+            msgs.push(sub_msg);
+        }
     };
 
-    let sub_msg = json!({
-        "op": "subscribe",
-        "channel": channel,
-        "market": market
-    });
-
-    return sub_msg;
+    return msgs;
 }
 
 pub fn unsubscribe(channel: &str, market: &str) -> Value{

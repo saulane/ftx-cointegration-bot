@@ -41,6 +41,7 @@ impl HistoricalData{
 
 #[derive(Debug)]
 pub struct Pair{
+    pub pair: [String; 2],
     pub crypto_1: Vec<f64>,
     pub crypto_2: Vec<f64>,
     pub last_bar_ts: f64,
@@ -49,13 +50,14 @@ pub struct Pair{
 
 
 impl Pair{
-    pub fn new(crypto1: &HistoricalData, crypto2: &HistoricalData) -> Pair{
+    pub fn new(crypto_1_symbol:String, crypto1: &HistoricalData, crypto_2_symbol: String, crypto2: &HistoricalData) -> Pair{
         let prices_1 = crypto1.prices().unwrap();
         let prices_2 = crypto2.prices().unwrap();
 
         let log_diff = calculations::log_diff(&prices_1, &prices_2).unwrap();
 
         Pair{
+            pair: [crypto_1_symbol, crypto_2_symbol],
             crypto_1: crypto1.prices().unwrap(),
             crypto_2: crypto2.prices().unwrap(),
             last_bar_ts: crypto1.result.last().unwrap().time,
@@ -77,10 +79,34 @@ impl Pair{
         self.update_zscore()
     }
 
-    pub fn decision_making(&self) -> Result<bool, ()>{
-        match &self.zscore{
-            zscore if zscore.abs() > 1.5 => Ok(true),
-            _ => Ok(false),
+    pub fn position_size(&self, freeBalance: &f64, totalBalance: &f64) -> Option<[f64;2]>{
+        match self.zscore{
+                zscore if zscore.abs()>1.5 => {
+                    let crypto_1_price: &f64 = self.crypto_1.last().unwrap();
+                    let crypto_2_price: &f64 = self.crypto_2.last().unwrap();
+            
+                    let total_with_leverage: f64 = totalBalance*17.0;
+                    let free_with_leverage: f64 = freeBalance*17.0;
+            
+                    let each_pos_size: f64 = 0.1 * &free_with_leverage;
+            
+                    let crypto_1_size: f64 = &each_pos_size/crypto_1_price;
+                    let crypto_2_size: f64 = &each_pos_size/crypto_2_price;
+            
+                    match (free_with_leverage, total_with_leverage){
+                        (free, total) if free >= 0.2*total=> {
+                            match self.zscore{
+                                zs if zs<0.0 => Some([crypto_1_size, -crypto_2_size]),
+                                zs if zs>=0.0 => Some([-crypto_1_size, crypto_2_size]),
+                                _ => None,
+                            }
+                        },
+                        _ => None
+                    }
+                }
+                _=> None
+
         }
+
     }
 }
