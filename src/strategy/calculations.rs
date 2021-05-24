@@ -91,7 +91,7 @@ pub fn zscore_array(data: &[f64]) -> Option<f64>{
 }
 
 
-pub fn log_diff<'a>(data1: &'a [f64], data2: &'a [f64]) -> Option<Vec<f64>>{
+pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Option<Vec<f64>>{
     if data1.len() != data2.len(){
         return None
     }else{

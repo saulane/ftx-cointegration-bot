@@ -13,7 +13,7 @@ mod strategy;
 use std::time::{SystemTime};
 use exchange::ftx::rest_api::FtxApiClient;
 use exchange::ftx::websocket as ws;
-use strategy::data_type::HistoricalData;
+use strategy::data_type::{HistoricalData, Pair};
 
 
 lazy_static!{
@@ -29,27 +29,42 @@ fn current_ts() -> u128 {
 
 #[tokio::main]
 async fn main(){
-    
     let ftx_bot =  FtxApiClient{
         api_key: API_KEY.to_string(),
         api_secret: API_SECRET.to_string(),
         request_client: reqwest::Client::new()
     };
 
-    let mut market_state: strategy::MarketState = strategy::MarketState::new();
 
-    let mut btc_price: f64 = 0.0;
-    let mut bch_price: f64 = 0.0; 
 
-    let eth:HistoricalData = strategy::data_type::HistoricalData::new(ftx_bot.fetch_historical_data("ETH/USD", "900").await.unwrap()).unwrap();
-    let ltc:HistoricalData = strategy::data_type::HistoricalData::new(ftx_bot.fetch_historical_data("LTC/USD", "900").await.unwrap()).unwrap();
+    let eth:HistoricalData = HistoricalData::new(ftx_bot.fetch_historical_data("ETH/USD", "900").await.unwrap()).unwrap();
+    // println!("{:?}", &eth);
+    let ltc:HistoricalData = HistoricalData::new(ftx_bot.fetch_historical_data("LTC/USD", "900").await.unwrap()).unwrap();
+    // println!("{:?}", &ltc);
 
-    let pair = strategy::data_type::Pair::new(&eth, &ltc);
+    let mut pair: Pair = Pair::new(&eth, &ltc);
+
 
     println!("{:?}", &pair);
 
-    let (mut socket, response) =
-        connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");
+    // loop{
+    //     if current_ts()>= last_update+2000{
+    //         eth = HistoricalData::new(ftx_bot.fetch_historical_data("ETH/USD", "900").await.unwrap()).unwrap();
+    //         ltc = HistoricalData::new(ftx_bot.fetch_historical_data("LTC/USD", "900").await.unwrap()).unwrap();
+
+    //         pair = Pair::new(&eth, &ltc);
+
+    //         println!("ETH: {} | LTC: {:?}", &pair.crypto_1[19], &pair.crypto_2[19]);
+    //         println!("Zscore: {} | Opportuniy ? ->  {:?}", &pair.zscore,&pair.decision_making().unwrap());
+    //         println!("{:?}", current_ts());
+    //         last_update = current_ts();
+    //     }
+    // }
+
+
+
+
+    let (mut socket, response) = connect(Url::parse("wss://ftx.com/ws/").unwrap()).expect("Can't connect");
 
     println!("Connected to the server");
     println!("Response HTTP code: {}", response.status());
@@ -61,8 +76,8 @@ async fn main(){
     socket.write_message(Message::Text(auth_msg.to_string())).unwrap();
     socket.write_message(Message::Text(ws::subscribe("orders", None).to_string())).unwrap();
     socket.write_message(Message::Text(ws::subscribe("fills", None).to_string())).unwrap();
-    socket.write_message(Message::Text(ws::subscribe("ticker", Some("BTC/USD")).to_string())).unwrap();
-    socket.write_message(Message::Text(ws::subscribe("ticker", Some("BCH/USD")).to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("ticker", Some("ETH/USD")).to_string())).unwrap();
+    socket.write_message(Message::Text(ws::subscribe("ticker", Some("LTC/USD")).to_string())).unwrap();
 
     loop {
         let msg = socket.read_message().expect("Error reading message");
@@ -75,25 +90,30 @@ async fn main(){
         if parsed["channel"] == "ticker"{
             let data_obj = parsed["data"].to_string();
             if data_obj != "null"{
-                if parsed["market"] == "BTC/USD"{
+                if parsed["market"] == "ETH/USD"{
                     let data = ws::data_msg(data_obj).unwrap();
-                    btc_price = data.last;
-                    // println!("BTC: {}", init_btc_price);
-                }else if parsed["market"] == "BCH/USD"{
+                    pair.crypto_1[19] = data.last;
+                }else if parsed["market"] == "LTC/USD"{
                     let data = ws::data_msg(data_obj).unwrap();
-                    bch_price = data.last;
-                    // println!("BCH: {}", init_bch_price);
+                    pair.crypto_2[19] = data.last;
                 }
             }
         };
 
-        if bch_price != 0.0 && btc_price != 0.0 && current_ts()-market_state.last_update_ts>=500{
-            market_state.update_price(btc_price, bch_price);
-
-            println!("{:?}", market_state);
-        }
-
+        pair.update_zscore();
+        println!("ETH: {} | LTC: {:?}", &pair.crypto_1.last().unwrap(), &pair.crypto_2.last().unwrap());
+        println!("ETH_array: {:?}", &pair.crypto_1);
+        println!("Zscore: {} | Opportuniy ? ->  {:?}", &pair.zscore,&pair.decision_making().unwrap());
         
+        println!("{:?}", current_ts());
+
+        if current_ts() as f64 >= pair.last_bar_ts+910000.0{
+            let neweth = HistoricalData::new(ftx_bot.fetch_historical_data("ETH/USD", "900").await.unwrap()).unwrap();
+            let newltc = HistoricalData::new(ftx_bot.fetch_historical_data("LTC/USD", "900").await.unwrap()).unwrap();
+
+            pair.update_prices(&neweth, &newltc);
+            println!("New OHLC Fetched");
+        }
 
     }
     // socket.close(None);

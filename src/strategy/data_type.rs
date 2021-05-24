@@ -6,18 +6,18 @@ mod calculations;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HistoricalData{
-    success: bool,
-    result: [PriceData; 20],
+    pub success: bool,
+    pub result: Vec<PriceData>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PriceData{
-    startTime: String,
-    time: f64,
-    open: f64,
+    pub startTime: String,
+    pub time: f64,
+    pub open: f64,
     high: f64,
     low: f64,
-    close: f64,
+    pub close: f64,
     volume: f64
 }
 
@@ -27,11 +27,11 @@ impl HistoricalData{
         Ok(historical_data)
     }
 
-    pub fn prices(&self) -> Option<[f64;20]>{
-        let mut prices:[f64; 20] = [0.0; 20];
+    pub fn prices(&self) -> Option<Vec<f64>>{
+        let mut prices: Vec<f64> = Vec::new();
 
-        for (i,x) in self.result.iter().enumerate(){
-            prices[i] = x.close;
+        for i in self.result.iter(){
+            prices.push(i.close);
         }
 
         Some(prices)
@@ -41,23 +41,46 @@ impl HistoricalData{
 
 #[derive(Debug)]
 pub struct Pair{
-    pub crypto_1: [f64; 20],
-    pub crypto_2: [f64; 20],
+    pub crypto_1: Vec<f64>,
+    pub crypto_2: Vec<f64>,
+    pub last_bar_ts: f64,
     pub zscore: f64,
 }
 
 
 impl Pair{
     pub fn new(crypto1: &HistoricalData, crypto2: &HistoricalData) -> Pair{
-        let prices_1: [f64; 20] = crypto1.prices().unwrap();
-        let prices_2: [f64; 20] = crypto2.prices().unwrap();
+        let prices_1 = crypto1.prices().unwrap();
+        let prices_2 = crypto2.prices().unwrap();
 
         let log_diff = calculations::log_diff(&prices_1, &prices_2).unwrap();
 
         Pair{
             crypto_1: crypto1.prices().unwrap(),
             crypto_2: crypto2.prices().unwrap(),
+            last_bar_ts: crypto1.result.last().unwrap().time,
             zscore: calculations::zscore(&log_diff).unwrap(),
+        }
+    }
+
+    pub fn update_zscore(&mut self){
+        let log_diff = calculations::log_diff(&self.crypto_1, &self.crypto_2).unwrap();
+
+        self.zscore = calculations::zscore(&log_diff).unwrap();
+    }
+
+    pub fn update_prices(&mut self, crypto_1: &HistoricalData, crypto_2: &HistoricalData){
+        self.crypto_1 = crypto_1.prices().unwrap();
+        self.crypto_2 = crypto_2.prices().unwrap();
+        self.last_bar_ts = crypto_1.result.last().unwrap().time;
+
+        self.update_zscore()
+    }
+
+    pub fn decision_making(&self) -> Result<bool, ()>{
+        match &self.zscore{
+            zscore if zscore.abs() > 1.5 => Ok(true),
+            _ => Ok(false),
         }
     }
 }
