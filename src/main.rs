@@ -40,8 +40,8 @@ async fn main(){
     let balance = ftx_bot.get_balance().await.unwrap();
     println!("{:?}", balance);
 
-    let pair_symbol_list = vec!(["DOGE-PERP", "VET-PERP"]);
-    let symbol_list = vec!("DOGE-PERP", "VET-PERP");
+    let pair_symbol_list = vec!(["ETH-PERP", "BCH-PERP"],["DOGE-PERP", "VET-PERP"]);
+    let symbol_list = vec!("ETH-PERP", "BCH-PERP","DOGE-PERP", "VET-PERP");
     let mut symbol_last_prices_list = HashMap::new();
     let mut pair_list: Vec<Pair> = Vec::new();
 
@@ -73,6 +73,9 @@ async fn main(){
     socket.write_message(Message::Text(ws::subscribe("orders", None)[0].to_string())).unwrap();
     socket.write_message(Message::Text(ws::subscribe("fills", None)[0].to_string())).unwrap();
     
+    if current_ts().to_string().ends_with("5000"){
+        socket.write_message(Message::Text("{'op': 'ping'}".to_string())).unwrap();
+    }
     
     for s in sub_msgs{
         socket.write_message(Message::Text(s.to_string())).unwrap();
@@ -115,11 +118,11 @@ async fn main(){
                 p.update_prices(&neweth, &newltc);
                 println!("New OHLC Fetched");
             }
-
-            print!("{}: {} | {}: {}", &p.pair[0],&p.crypto_1.last().unwrap(),&p.pair[1], &p.crypto_2.last().unwrap());
-            print!("Zscore: {} | Opportuniy ? ->  {:?}", &p.zscore,&p.position_size(&balance.get_USD_Balance()[0], &balance.get_USD_Balance()[1]));
+            println!("{:?}", symbol_last_prices_list);
+            print!("{}: {} , {}: {} | ", &p.pair[0],&p.crypto_1.last().unwrap(),&p.pair[1], &p.crypto_2.last().unwrap());
+            println!("Zscore: {} , Opportuniy ? ->  {:?} | ", &p.zscore,&p.position_size(&balance.get_USD_Balance()[0], &balance.get_USD_Balance()[1]));
             
-            println!("{:?}", current_ts());
+            println!("");
 
             
         }
