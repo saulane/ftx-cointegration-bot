@@ -16,7 +16,7 @@ pub fn signature(api_secret: &str, endpoint: &str, method: &str, api: &str) -> R
     let ts: String = current_ts().to_string();
 
     let message = if api=="rest" {format!("{}{}/api{}", ts, method, endpoint)} else {format!("{}websocket_login", ts)};
-    println!("URL payload: {}", message);
+    //println!("URL payload: {}", message);
 
     let mut mac = HmacSha256::new_from_slice(api_secret.as_bytes()).expect("Problem keying the API_SECRET");
     mac.update(&message.as_bytes());
