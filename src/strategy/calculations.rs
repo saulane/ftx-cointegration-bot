@@ -1,3 +1,5 @@
+use std::fmt::write;
+
 pub fn mean_dist(btc: f64, bch:f64) -> f64{
     println!("Log BTC: {}, Log BCH: {}", btc.ln(), bch.ln());
     return bch.ln()-btc.ln();
@@ -14,21 +16,17 @@ pub fn mean(data: &Vec<f64>) -> Option<f64>{
     }
 }
 
-pub fn zscore(data: &Vec<f64>) -> Option<f64>{
+pub fn zscore(data: &Vec<f64>) -> Result<f64, ZscoreError>{
     // let data = &self.diff_history.borrow().clone();
-    let mean = mean(data);
-    let std_deviation = std_deviation(data);
+    // let mean = mean(data);
+    // let std_deviation = std_deviation(data);
 
-    let zscore = match (mean, std_deviation) {
-        (Some(mean), Some(std_deviation)) => {
-            let diff = data[4] as f64 - mean;
+    // println!("Mean: {:?}, StdDev: {:?}", mean, std_deviation);
 
-            Some(diff / std_deviation)
-        },
-        _ => None
-    };
-
-    zscore
+    match (mean(data), std_deviation(data), data.last()){
+        (Some(mean), Some(std), Some(last)) => return Ok((last-mean)/std),
+        _ => return Err(ZscoreError),
+    }
 }
 
 pub fn std_deviation(data: &Vec<f64>) -> Option<f64> {
@@ -48,60 +46,40 @@ pub fn std_deviation(data: &Vec<f64>) -> Option<f64> {
 
 }
 
-fn mean_array(data: &[f64]) -> Option<f64> {
-    let sum = data.iter().sum::<f64>() as f64;
-    let count = data.len();
+pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Result<Vec<f64>, ()>{
+    match (data1, data2) {
+        (d1, d2) if d1.len() == d2.len() => {
+            let data_len: usize = d1.len();
+            let mut log_diff = Vec::new();
 
-    match count {
-        positive if positive > 0 => Some(sum / count as f64),
-        _ => None,
+            for i in 0..data_len{
+                log_diff.push(d1[i].ln() - d2[i].ln());
+            }
+
+            return Ok(log_diff);
+
+        },
+        _ => return Err(()),
+    }
+
+}
+
+
+#[derive(Debug, Clone)]
+pub struct ZscoreError;
+
+impl std::fmt::Display for ZscoreError{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result{
+        write!(f, "Error computing zscore")
     }
 }
 
-fn std_deviation_array(data: &[f64]) -> Option<f64> {
-    match (mean_array(data), data.len()) {
-        (Some(data_mean), count) if count > 0 => {
-            let variance = data.iter().map(|value| {
-                let diff = data_mean - (*value as f64);
 
-                diff * diff
-            }).sum::<f64>() / count as f64;
+#[derive(Debug, Clone)]
+pub struct LogDiffError;
 
-            Some(variance.sqrt())
-        },
-        _ => None
-    }
-}
-
-pub fn zscore_array(data: &[f64]) -> Option<f64>{
-    // let data = &self.diff_history.borrow().clone();
-    let mean = mean_array(data);
-    let std_deviation = std_deviation_array(data);
-
-    let zscore = match (mean, std_deviation) {
-        (Some(mean), Some(std_deviation)) => {
-            let diff = data[4] as f64 - mean;
-
-            Some(diff / std_deviation)
-        },
-        _ => None
-    };
-
-    zscore
-}
-
-
-pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Option<Vec<f64>>{
-    if data1.len() != data2.len(){
-        return None
-    }else{
-        let data_len: usize = data1.len();
-        let mut log_diff = Vec::new();
-
-        for i in 0..data_len{
-            log_diff.push(data1[i].ln() - data2[i].ln());
-        }
-
-        return Some(log_diff);
+impl std::fmt::Display for LogDiffError{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result{
+        write!(f, "Error computing the log diff of the 2 vec, make sure both Vec are the same size")
     }
 }

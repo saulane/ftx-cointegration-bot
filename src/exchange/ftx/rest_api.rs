@@ -6,9 +6,9 @@ mod objects;
 
 use serde_json::{Value, json};
 use reqwest::header;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::format};
 
-use objects::{Balance};
+use objects::{Balance, Market};
 
 
 const API_ENDPOINT: &str = "https://ftx.com/api";
@@ -22,6 +22,21 @@ pub struct FtxApiClient{
 }
 
 impl FtxApiClient{
+
+    pub async fn get_market(&self, market: &str) -> Result<Market, Box<dyn std::error::Error>>{
+        let data: Value = self.request_client.get(format!("https://ftx.com/api/markets/{}", market))
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        let res = data["result"].clone();
+
+        let market: Market = serde_json::from_value(res)?;
+
+        Ok(market)
+    }
+
     pub async fn fetch_historical_data(&self, market: &str, resolution: &str) -> Result<Value, Box<dyn std::error::Error>>{
         let data = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit=20", market, resolution))
             .send()
@@ -88,24 +103,27 @@ impl FtxApiClient{
         Ok(orders_history)
     }
 
-    pub async fn post_order(&self, price: f64, size: f64, r#type:&str) -> Result<Value, reqwest::Error>{
+    pub async fn post_order(&self,market:&str, price: f64, size: f64, r#type:&str, reduceOnly: bool) -> Result<Value, Box<dyn std::error::Error>>{
         let orders_url = self.url("/orders");
 
         let side = if size>=0.0 {"buy"} else {"sell"};
 
         let price = if r#type == "limit" { price } else { 0.0 };
         let params_json = json!({
-            "market": "BTC-PERP",
-            "size": size,
+            "market": market,
+            "size": size.abs(),
             "side": side,
             "type": r#type,
             "price": price,
+            "reduceOnly": reduceOnly,
         });
+
+        println!("{:?}",params_json);
 
         let url_params = format!("/orders{}",params_json.to_string());
         let auth_header = self.auth_header(&url_params, "POST").unwrap();
 
-        let orders_history = self.request_client.post(orders_url)
+        let order = self.request_client.post(orders_url)
             .headers(auth_header)
             .json(&params_json)
             .send()
@@ -113,7 +131,9 @@ impl FtxApiClient{
             .json()
             .await?;
 
-        Ok(orders_history)
+        println!("{:?}",order);
+
+        Ok(order)
     }
 
     pub async fn modify_order(&self, order_id:&str, size: Option<f64>, price: Option<f64>) -> Result<Value, reqwest::Error>{
