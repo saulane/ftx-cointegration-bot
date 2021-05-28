@@ -13,7 +13,6 @@ use csv::StringRecord;
 use std::collections::HashMap;
 use exchange::ftx::rest_api::FtxApiClient;
 use strategy::data_type::{HistoricalData, Pair, Position};
-use strategy::python_script;
 use std::fs;
 use std::error::Error;
 use chrono::{Utc, Timelike};
@@ -100,8 +99,13 @@ async fn main(){
 
     ctrlc::set_handler(move || {
         unsafe{
+            if STOP == true{
+                println!("Forcing Close");
+                std::process::exit(0);
+            }
             STOP = true;
             println!("Stopping Program!");
+
         }
     })
     .expect("Error setting Ctrl-C handler");
@@ -138,14 +142,6 @@ async fn main(){
             pair_list = make_pair_list(&pair_symbol_list, &ftx_bot).await.unwrap();
 
             last_ohlc_update = current_ts();
-        }
-
-        if positions.len() == 0 {
-            if current_ts() - last_coint_test_update >= 864000000 {
-                python_script::get_new_coint_pairs().await;
-
-                last_coint_test_update = current_ts();
-            }
         }
 
         'pairsloop: for p in pair_list.iter_mut(){
