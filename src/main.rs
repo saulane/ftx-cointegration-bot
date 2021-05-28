@@ -22,6 +22,15 @@ lazy_static!{
 static mut STOP:bool = false;
 static MAX_POS: u32 = 2;
 
+pub fn is_used(crypto: &str,positions:&HashMap<String, Position>) -> bool{
+    for k in positions.keys(){
+        if k.contains(crypto){
+            return false;
+        }
+    }
+    return true;
+}
+
 pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiClient) -> Result<Vec<Pair>, ()>{
     let mut pair_list: Vec<Pair> = Vec::new(); 
      for i in pair_symbol_list{
@@ -159,6 +168,14 @@ async fn main(){
                 }
             }else{
                 unsafe{
+                    
+                    let cryptos_names = p.pair_id.split("/");
+                    for symbol in cryptos_names{
+                        if is_used(symbol, &positions){
+                            continue 'pairsloop;
+                        }
+                    }
+
                     if p.zscore.abs()>=1.5 && positions.len() < MAX_POS as usize && STOP == false{ 
                         println!("New opportunity found!: {:?}", &p.pair);
                         let curr_balance = ftx_bot.get_balance().await.unwrap();
