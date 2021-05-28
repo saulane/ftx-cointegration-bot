@@ -12,7 +12,6 @@ pub mod utils{
         ts
     }
 
-
     pub fn signature(api_secret: &str, endpoint: &str, method: &str, api: &str) -> Result<(String, String), ()> {
         type HmacSha256 = Hmac<Sha256>;
         let ts: String = current_ts().to_string();

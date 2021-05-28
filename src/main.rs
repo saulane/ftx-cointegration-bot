@@ -8,7 +8,6 @@ mod lib;
 
 use lib::utils::{current_ts, pairs_reader};
 
-
 use std::collections::HashMap;
 use exchange::ftx::rest_api::FtxApiClient;
 use strategy::data_type::{HistoricalData, Pair, Position};
@@ -37,7 +36,7 @@ pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiC
          let mut i_counter = 0;
          'datafetching: loop{
              if i_counter != 0{
-                 std::thread::sleep(std::time::Duration::from_millis(60));
+                 std::thread::sleep(std::time::Duration::from_millis(40));
              }
  
              i_counter = i_counter+1;
@@ -62,7 +61,7 @@ pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiC
              break 'datafetching;
          }
  
-         std::thread::sleep(std::time::Duration::from_millis(60));
+         std::thread::sleep(std::time::Duration::from_millis(40));
      }
      return Ok(pair_list)
  }
@@ -79,6 +78,7 @@ async fn main(){
 
     //println!("{:?}", ftx_bot.get_open_positions().await.unwrap());
 
+    //listening to CTRL-C in order to stop the program
     ctrlc::set_handler(move || {
         unsafe{
             if STOP == true{
@@ -117,15 +117,18 @@ async fn main(){
     println!("CryptoList: {:?}, total in data: {}", &symbol_list, &symbol_list.len());
 
 
+    //Main Infinite Loop
     'mainloop: loop {
-        
-        if current_ts()-last_ohlc_update >= 60000 {
+        //Getting every last OHLC data for all the crypto
+        if current_ts()-last_ohlc_update >= 30000 {
             println!("All OHLC updated!");
             pair_list = make_pair_list(&pair_symbol_list, &ftx_bot).await.unwrap();
 
             last_ohlc_update = current_ts();
         }
 
+
+        //Iterate over every tradable pairs
         'pairsloop: for p in pair_list.iter_mut(){
             unsafe{
                 if STOP && positions.len() == 0{
@@ -145,10 +148,10 @@ async fn main(){
                 },
                 _=> continue 'pairsloop
             };
-            std::thread::sleep(std::time::Duration::from_millis(60));
+            std::thread::sleep(std::time::Duration::from_millis(70));
             
-
-            if positions.contains_key(&p.pair_id){
+            //Check if the Pair is already in position
+            if positions.contains_key(&p.pair_id){ 
                 if p.zscore.abs() <= 0.5{            
                     println!("Closing Trade on pair: {}, zscore={}", &p.pair_id, &p.zscore);
                     let curr_crypto1_pos_size = -&positions[&p.pair_id].crypto1_size;
@@ -169,6 +172,7 @@ async fn main(){
             }else{
                 unsafe{
                     
+                    //Check if a crypto is already in use in order to reduce risk
                     let cryptos_names = p.pair_id.split("/");
                     for symbol in cryptos_names{
                         if is_used(symbol, &positions){
@@ -176,6 +180,7 @@ async fn main(){
                         }
                     }
 
+                    //Check for opportunity
                     if p.zscore.abs()>=1.5 && positions.len() < MAX_POS as usize && STOP == false{ 
                         println!("New opportunity found!: {:?}", &p.pair);
                         let curr_balance = ftx_bot.get_balance().await.unwrap();
