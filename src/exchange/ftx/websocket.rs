@@ -1,9 +1,7 @@
 use serde_json::{Value, json};
 use serde::{Deserialize, Serialize};
 
-#[path = "utils.rs"]
-mod utils;
-
+use crate::lib::{utils};
 
 #[derive(Serialize, Deserialize)]
 pub struct TickerMessageData{

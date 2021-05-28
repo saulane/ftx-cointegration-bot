@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use serde_json::{Value};
 use serde::{Deserialize, Serialize};
 
@@ -51,11 +49,12 @@ pub struct Pair{
     pub crypto_2: Vec<f64>,
     pub last_bar_ts: f64,
     pub zscore: f64,
+    pub max_pos: u32,
 }
 
 
 impl Pair{
-    pub fn new(crypto_1_symbol:String, crypto1: &HistoricalData, crypto_2_symbol: String, crypto2: &HistoricalData) -> Result<Pair, ZscoreError>{
+    pub fn new(crypto_1_symbol:String, crypto1: &HistoricalData, crypto_2_symbol: String, crypto2: &HistoricalData, max_pos:u32) -> Result<Pair, ZscoreError>{
         let prices_1 = crypto1.prices().unwrap();
         let prices_2 = crypto2.prices().unwrap();
 
@@ -66,9 +65,6 @@ impl Pair{
             _ => Err(ZscoreError),
         };
 
-
-        
-
         Ok(Pair{
             pair: [crypto_1_symbol, crypto_2_symbol],
             pair_id: pair_id,
@@ -76,6 +72,7 @@ impl Pair{
             crypto_2: crypto2.prices().unwrap(),
             last_bar_ts: crypto1.result.last().unwrap().time,
             zscore: calculations::zscore(&log_diff?)?,
+            max_pos
         })
     }
 
@@ -121,17 +118,20 @@ impl Pair{
                 zscore if zscore.abs()>1.5 => {
                     let crypto_1_price: &f64 = self.crypto_1.last().unwrap();
                     let crypto_2_price: &f64 = self.crypto_2.last().unwrap();
-            
+                    
+                    let c1_len:f64 = (10.0 as f64).powi(calculations::number_of_tens(crypto_1_price) as i32);
+                    let c2_len:f64 = (10.0 as f64).powi(calculations::number_of_tens(crypto_2_price) as i32);
+
                     let total_with_leverage: f64 = totalBalance*18.0;
                     let free_with_leverage: f64 = freeBalance*18.0;
             
-                    let each_pos_size: f64 = 0.15 * &total_with_leverage;
+                    let each_pos_size: f64 = (0.9/self.max_pos as f64)* &total_with_leverage;
             
-                    let crypto_1_size: f64 = ((&each_pos_size/crypto_1_price)*10000.0).floor()/10000.0;
-                    let crypto_2_size: f64 = ((&each_pos_size/crypto_2_price)*10000.0).floor()/10000.0;
+                    let crypto_1_size: f64 = ((&each_pos_size/crypto_1_price)*c1_len).floor()/c1_len;
+                    let crypto_2_size: f64 = ((&each_pos_size/crypto_2_price)*c2_len).floor()/c2_len;
             
                     match (free_with_leverage, total_with_leverage){
-                        (free, total) if free >= 0.45*total=> {
+                        (free, total) if free >= 2.05*each_pos_size=> {
                             match self.zscore{
                                 zs if zs<0.0 => Some([crypto_1_size, -crypto_2_size]),
                                 zs if zs>=0.0 => Some([-crypto_1_size, crypto_2_size]),

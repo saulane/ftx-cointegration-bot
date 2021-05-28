@@ -8,17 +8,16 @@ edition = "2018"
 
 [dependencies]
 tungstenite = "0.13.0"
-url = "2.0.0"
 native-tls = "0.2.7"
 serde_json = {version="1.0", features = ["preserve_order"]}
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0.126", features = ["derive"]}
 reqwest = {version = "0.11.2", features = ["json"]}
-ring = ""
-hmac = ""
-sha2 = ""
-hex = ""
+hmac = "0.11.0"
+sha2 = "0.9.5"
+hex = "0.4.3"
 lazy_static = "1.4.0"
 csv = "1.1.6"
 pyo3 = "0.13.2"
 chrono = "0.4.19"
+ctrlc = "3.1.9"

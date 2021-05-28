@@ -1,11 +1,8 @@
 pub mod calculations;
 pub mod data_type;
+pub mod python_script;
 
 use std::{cell::RefCell};
-use calculations::{mean, mean_dist, zscore};
-
-#[path = "../utils.rs"]
-mod utils;
 
 #[derive(Debug, Clone)]
 pub struct MarketState{

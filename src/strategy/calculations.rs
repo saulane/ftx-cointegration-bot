@@ -1,11 +1,12 @@
 use std::fmt::write;
 
-pub fn mean_dist(btc: f64, bch:f64) -> f64{
+
+fn mean_dist(btc: f64, bch:f64) -> f64{
     println!("Log BTC: {}, Log BCH: {}", btc.ln(), bch.ln());
     return bch.ln()-btc.ln();
 }
 
-pub fn mean(data: &Vec<f64>) -> Option<f64>{
+fn mean(data: &Vec<f64>) -> Option<f64>{
     // let data = &self.diff_history.borrow().clone();
     let sum = data.iter().sum::<f64>() as f64;
     let count = data.len();
@@ -29,7 +30,7 @@ pub fn zscore(data: &Vec<f64>) -> Result<f64, ZscoreError>{
     }
 }
 
-pub fn std_deviation(data: &Vec<f64>) -> Option<f64> {
+fn std_deviation(data: &Vec<f64>) -> Option<f64> {
     // let data = &self.diff_history.borrow().clone();
     match (mean(data), data.len()) {
         (Some(mean), count) if count > 0 => {
@@ -62,6 +63,16 @@ pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Result<Vec<f64>, ()>{
         _ => return Err(()),
     }
 
+}
+
+pub fn number_of_tens(x:&f64) -> u32{
+    let mut x_clone = x.clone();
+    let mut len = 1;
+    while x_clone > 1.0{
+        x_clone/=10.0;
+        len+=1;
+    }
+    len
 }
 
 

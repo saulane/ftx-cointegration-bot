@@ -1,14 +1,15 @@
 extern crate reqwest;
 
-#[path = "utils.rs"]
-mod utils;
+
+use crate::lib::{utils};
+
 mod objects;
 
 use serde_json::{Value, json};
 use reqwest::header;
-use std::{collections::HashMap, fmt::format};
+use std::{collections::HashMap};
 
-use objects::{Balance, Market};
+use objects::{Balance, Market, OpenPosition};
 
 
 const API_ENDPOINT: &str = "https://ftx.com/api";
@@ -36,6 +37,26 @@ impl FtxApiClient{
 
         Ok(market)
     }
+
+    pub async fn get_open_positions(&self) -> Result<Vec<OpenPosition>, Box<dyn std::error::Error>>{
+        
+        let auth_header = self.auth_header("/positions", "GET").unwrap();
+        let data: Value = self.request_client.get(format!("https://ftx.com/api/positions"))
+            .headers(auth_header) 
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        let res  = data["result"].as_array().unwrap();
+        let mut positions = Vec::new();
+        for i in res.iter(){
+            let curr_pos: OpenPosition = serde_json::from_value(i.clone()).unwrap();
+            positions.push(curr_pos);
+        }
+        Ok(positions)
+    }
+
 
     pub async fn fetch_historical_data(&self, market: &str, resolution: &str) -> Result<Value, Box<dyn std::error::Error>>{
         let data = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit=20", market, resolution))
