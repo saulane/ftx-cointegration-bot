@@ -3,7 +3,9 @@ pub mod utils{
     pub use std::time::{SystemTime};
     pub use sha2::Sha256;
     pub use hmac::{Hmac, Mac, NewMac};
-
+    use csv::StringRecord;
+    use std::fs;
+    use std::error::Error;
 
     pub fn current_ts() -> u128 {
         let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis();
@@ -25,5 +27,16 @@ pub mod utils{
         let r2 = hex::encode(&result);
 
         Ok((r2, ts))
+    }
+
+    pub fn pairs_reader() -> Result<Vec<StringRecord>, Box<dyn Error>> {
+        let file = fs::File::open("CointPairs.txt").expect("Pls copy your 'CointPairs.txt' in the root folder of this app");
+        let mut rdr = csv::Reader::from_reader(file);
+        let mut pairs_vec = Vec::new();
+        for result in rdr.records() {
+            let record = result?;
+            pairs_vec.push(record);
+        }
+        Ok(pairs_vec)
     }
 }

@@ -38,8 +38,7 @@ impl FtxApiClient{
         Ok(market)
     }
 
-    pub async fn get_open_positions(&self) -> Result<Vec<OpenPosition>, Box<dyn std::error::Error>>{
-        
+    pub async fn get_open_positions(&self) -> Result<Vec<Value>, Box<dyn std::error::Error>>{
         let auth_header = self.auth_header("/positions", "GET").unwrap();
         let data: Value = self.request_client.get(format!("https://ftx.com/api/positions"))
             .headers(auth_header) 
@@ -48,18 +47,12 @@ impl FtxApiClient{
             .json()
             .await?;
 
-        let res  = data["result"].as_array().unwrap();
-        let mut positions = Vec::new();
-        for i in res.iter(){
-            let curr_pos: OpenPosition = serde_json::from_value(i.clone()).unwrap();
-            positions.push(curr_pos);
-        }
-        Ok(positions)
+        Ok(data["result"].as_array().unwrap().to_vec())
     }
 
 
     pub async fn fetch_historical_data(&self, market: &str, resolution: &str) -> Result<Value, Box<dyn std::error::Error>>{
-        let data = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit=20", market, resolution))
+        let data: Value = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit=20", market, resolution))
             .send()
             .await?
             .json()

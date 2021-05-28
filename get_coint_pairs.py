@@ -1,5 +1,4 @@
 import ccxt
-import configparser
 import os
 
 from statsmodels.tsa.stattools import adfuller
@@ -46,14 +45,21 @@ def cointegrated_pair(pairs: list, prices: dict):
         y = prices[i[1]]
 
         if len(x) == len(y):
-            if coint(x, y)[1] <= 0.01:
-                coint_pairs.append(i)
-                print("Found one cointegrated pair:", i, "Total Found:", len(coint_pairs), "Total tested:", j)
-                print(i[0]+","+i[1], file=open("CointPairs.txt", "a"))
+            c1 = coint(x,y)[1]
+            if c1 <= 0.01:
+                c2 = coint(y,x)[1]
+                if min(c1,c2) == c1:
+                    coint_pairs.append(i)
+                    print("Found one cointegrated pair:", i, "Total Found:", len(coint_pairs), "Total tested:", j)
+                    print(i[0]+","+i[1], file=open("CointPairs.txt", "a"))
+                elif min(c1,c2) == c2:
+                    coint_pairs.append([i[1],i[0]])
+                    print("Found one cointegrated pair:", [i[1],i[0]], "Total Found:", len(coint_pairs), "Total tested:", j)
+                    print(i[1]+","+i[0], file=open("CointPairs.txt", "a"))                    
     return coint_pairs
 
 
-blacklist = ["DOGE-PERP", "VET-PERP", "BTC-PERP", "EOS"]
+blacklist = ["DOGE-PERP", "VET-PERP", "BTC-PERP", "EOS-PERP"]
 exchange = ccxt.ftx({})
 
 

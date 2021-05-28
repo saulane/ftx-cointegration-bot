@@ -122,16 +122,16 @@ impl Pair{
                     let c1_len:f64 = (10.0 as f64).powi(calculations::number_of_tens(crypto_1_price) as i32);
                     let c2_len:f64 = (10.0 as f64).powi(calculations::number_of_tens(crypto_2_price) as i32);
 
-                    let total_with_leverage: f64 = totalBalance*18.0;
-                    let free_with_leverage: f64 = freeBalance*18.0;
+                    let total_with_leverage: f64 = totalBalance*20.0;
+                    let free_with_leverage: f64 = freeBalance*20.0;
             
-                    let each_pos_size: f64 = (0.9/self.max_pos as f64)* &total_with_leverage;
+                    let each_pos_size: f64 = (0.8/2.0/self.max_pos as f64)* &total_with_leverage;
             
                     let crypto_1_size: f64 = ((&each_pos_size/crypto_1_price)*c1_len).floor()/c1_len;
                     let crypto_2_size: f64 = ((&each_pos_size/crypto_2_price)*c2_len).floor()/c2_len;
             
                     match (free_with_leverage, total_with_leverage){
-                        (free, total) if free >= 2.05*each_pos_size=> {
+                        (free, total) if free >= 2.0*each_pos_size=> {
                             match self.zscore{
                                 zs if zs<0.0 => Some([crypto_1_size, -crypto_2_size]),
                                 zs if zs>=0.0 => Some([-crypto_1_size, crypto_2_size]),
