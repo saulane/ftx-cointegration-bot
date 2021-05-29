@@ -8,6 +8,11 @@ mod lib;
 
 use lib::utils::{current_ts, pairs_reader};
 
+use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::fs::OpenOptions;
+
 use std::collections::HashMap;
 use exchange::ftx::rest_api::FtxApiClient;
 use strategy::data_type::{HistoricalData, Pair, Position};
@@ -19,15 +24,15 @@ lazy_static!{
 }
 
 static mut STOP:bool = false;
-static MAX_POS: u32 = 2;
+static MAX_POS: u32 = 3;
 
 pub fn is_used(crypto: &str,positions:&HashMap<String, Position>) -> bool{
     for k in positions.keys(){
         if k.contains(crypto){
-            return false;
+            return true;
         }
     }
-    return true;
+    return false;
 }
 
 pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiClient) -> Result<Vec<Pair>, ()>{
@@ -70,6 +75,10 @@ pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiC
 
 #[tokio::main]
 async fn main(){
+    let temp_directory = env::temp_dir();
+    let temp_file = temp_directory.join("file");
+    let mut file = OpenOptions::new().append(true).open("data.txt").expect("cannot open file");;
+
     let ftx_bot =  FtxApiClient{
         api_key: API_KEY.to_string(),
         api_secret: API_SECRET.to_string(),
@@ -151,23 +160,33 @@ async fn main(){
             std::thread::sleep(std::time::Duration::from_millis(70));
             
             //Check if the Pair is already in position
-            if positions.contains_key(&p.pair_id){ 
-                if p.zscore.abs() <= 0.5{            
-                    println!("Closing Trade on pair: {}, zscore={}", &p.pair_id, &p.zscore);
-                    let curr_crypto1_pos_size = -&positions[&p.pair_id].crypto1_size;
-                    let curr_crypto2_pos_size = -&positions[&p.pair_id].crypto2_size;
+            if positions.contains_key(&p.pair_id){
+                unsafe{
+                    if p.zscore.abs() <= 0.5 || STOP == true{            
+                        println!("Closing Trade on pair: {}, zscore={}", &p.pair_id, &p.zscore);
+                        let curr_crypto1_pos_size = -&positions[&p.pair_id].crypto1_size;
+                        let curr_crypto2_pos_size = -&positions[&p.pair_id].crypto2_size;
 
-                    let close_order1 = ftx_bot.post_order(&p.pair[0],0.0, curr_crypto1_pos_size, "market", true).await;
-                    let close_order2 = ftx_bot.post_order(&p.pair[1],0.0, curr_crypto2_pos_size, "market", true).await;
+                        let crypto1_profit = if &positions[&p.pair_id].crypto1_size >= &0.0 { p.crypto_1.last().unwrap()/&positions[&p.pair_id].crypto1_entry_price - 1.0 } else { &positions[&p.pair_id].crypto1_entry_price/p.crypto_1.last().unwrap() - 1.0 };
+                        let crypto2_profit = if &positions[&p.pair_id].crypto2_size >= &0.0 { p.crypto_2.last().unwrap()/&positions[&p.pair_id].crypto2_entry_price - 1.0 } else { &positions[&p.pair_id].crypto2_entry_price/p.crypto_2.last().unwrap() - 1.0 };
 
-                    match (close_order1, close_order2){
-                        (Ok(_res1), Ok(_res2)) => {
-                            positions.remove(&p.pair_id);
-                        },
-                        _ => println!("Problem closing position on exchange")
+                        let trade_res = format!("\n{}, {}", &p.pair_id, (&crypto1_profit+&crypto2_profit-0.07/100.0)*100.0);
+                        file.write_all(trade_res.as_bytes()).expect("write failed");
+                        //writeln!(&mut file, "{}", &trade_res).unwrap();
+                        positions.remove(&p.pair_id);
+
+                        // let close_order1 = ftx_bot.post_order(&p.pair[0],0.0, curr_crypto1_pos_size, "market", true).await;
+                        // let close_order2 = ftx_bot.post_order(&p.pair[1],0.0, curr_crypto2_pos_size, "market", true).await;
+
+                        // match (close_order1, close_order2){
+                        //     (Ok(_res1), Ok(_res2)) => {
+                        //         positions.remove(&p.pair_id);
+                        //     },
+                        //     _ => println!("Problem closing position on exchange")
+                        // }
+                    }else{
+                        println!("Open Position on {}, zscore = {}", &p.pair_id, &p.zscore);
                     }
-                }else{
-                    println!("Open Position on {}, zscore = {}", &p.pair_id, &p.zscore);
                 }
             }else{
                 unsafe{
@@ -176,6 +195,7 @@ async fn main(){
                     let cryptos_names = p.pair_id.split("/");
                     for symbol in cryptos_names{
                         if is_used(symbol, &positions){
+                            println!("Crypto already used");
                             continue 'pairsloop;
                         }
                     }
@@ -186,16 +206,18 @@ async fn main(){
                         let curr_balance = ftx_bot.get_balance().await.unwrap();
                         match &p.position_size(&curr_balance.get_USD_Balance()[0], &curr_balance.get_USD_Balance()[1]){
                             Some(size) => {
-                                let order1 = ftx_bot.post_order(&p.pair[0],0.0, size[0], "market", false).await;
-                                let order2 = ftx_bot.post_order(&p.pair[1],0.0, size[1], "market", false).await;
+                                let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
+                                positions.insert(p.pair_id.to_string(), new_pos);
+                                // let order1 = ftx_bot.post_order(&p.pair[0],0.0, size[0], "market", false).await;
+                                // let order2 = ftx_bot.post_order(&p.pair[1],0.0, size[1], "market", false).await;
 
-                                match (order1, order2){
-                                    (Ok(_res1), Ok(_res2)) => {
-                                        let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
-                                        positions.insert(p.pair_id.to_string(), new_pos);
-                                    },
-                                    _ => println!("Error posting order to api")
-                                }
+                                // match (order1, order2){
+                                //     (Ok(_res1), Ok(_res2)) => {
+                                //         let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
+                                //         positions.insert(p.pair_id.to_string(), new_pos);
+                                //     },
+                                //     _ => println!("Error posting order to api")
+                                // }
                             },
                             _ => println!("Not enough money!"),
                         }

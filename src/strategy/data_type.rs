@@ -119,11 +119,11 @@ impl Pair{
                     let crypto_1_price: &f64 = self.crypto_1.last().unwrap();
                     let crypto_2_price: &f64 = self.crypto_2.last().unwrap();
                     
-                    let c1_len:f64 = (10.0 as f64).powi(calculations::number_of_tens(crypto_1_price) as i32);
-                    let c2_len:f64 = (10.0 as f64).powi(calculations::number_of_tens(crypto_2_price) as i32);
+                    let c1_len:f64 = (10.0 as f64).powi(10 * calculations::number_of_tens(crypto_1_price) as i32);
+                    let c2_len:f64 = (10.0 as f64).powi(10 * calculations::number_of_tens(crypto_2_price) as i32);
 
-                    let total_with_leverage: f64 = totalBalance*20.0;
-                    let free_with_leverage: f64 = freeBalance*20.0;
+                    let total_with_leverage: f64 = totalBalance*15.0;
+                    let free_with_leverage: f64 = freeBalance*15.0;
             
                     let each_pos_size: f64 = (0.8/2.0/self.max_pos as f64)* &total_with_leverage;
             
