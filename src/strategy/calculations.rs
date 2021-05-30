@@ -1,10 +1,4 @@
-use std::fmt::write;
-
-
-fn mean_dist(btc: f64, bch:f64) -> f64{
-    println!("Log BTC: {}, Log BCH: {}", btc.ln(), bch.ln());
-    return bch.ln()-btc.ln();
-}
+use std::error::Error;
 
 fn mean(data: &Vec<f64>) -> Option<f64>{
     // let data = &self.diff_history.borrow().clone();
@@ -17,7 +11,7 @@ fn mean(data: &Vec<f64>) -> Option<f64>{
     }
 }
 
-pub fn zscore(data: &Vec<f64>) -> Result<f64, ZscoreError>{
+pub fn zscore(data: &Vec<f64>) -> Result<f64, Box<dyn Error>>{
     // let data = &self.diff_history.borrow().clone();
     // let mean = mean(data);
     // let std_deviation = std_deviation(data);
@@ -26,7 +20,7 @@ pub fn zscore(data: &Vec<f64>) -> Result<f64, ZscoreError>{
 
     match (mean(data), std_deviation(data), data.last()){
         (Some(mean), Some(std), Some(last)) => return Ok((last-mean)/std),
-        _ => return Err(ZscoreError),
+        _ => return Err("Error computing zscore.".into()),
     }
 }
 
@@ -47,7 +41,7 @@ fn std_deviation(data: &Vec<f64>) -> Option<f64> {
 
 }
 
-pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Result<Vec<f64>, ()>{
+pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Result<Vec<f64>, Box<dyn Error>>{
     match (data1, data2) {
         (d1, d2) if d1.len() == d2.len() => {
             let data_len: usize = d1.len();
@@ -60,7 +54,7 @@ pub fn log_diff(data1: &Vec<f64>, data2: &Vec<f64>) -> Result<Vec<f64>, ()>{
             return Ok(log_diff);
 
         },
-        _ => return Err(()),
+        _ => return Err("Error computing the log difference: wrong size.".into()),
     }
 
 }
@@ -73,24 +67,4 @@ pub fn number_of_tens(x:&f64) -> u32{
         len+=1;
     }
     len
-}
-
-
-#[derive(Debug, Clone)]
-pub struct ZscoreError;
-
-impl std::fmt::Display for ZscoreError{
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result{
-        write!(f, "Error computing zscore")
-    }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct LogDiffError;
-
-impl std::fmt::Display for LogDiffError{
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result{
-        write!(f, "Error computing the log diff of the 2 vec, make sure both Vec are the same size")
-    }
 }

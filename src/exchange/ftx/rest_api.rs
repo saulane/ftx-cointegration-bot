@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use reqwest::header;
 use std::{collections::HashMap};
 
-use objects::{Balance, Market, OpenPosition};
+use objects::{Balance, Market, OpenPosition, Markets};
 
 
 const API_ENDPOINT: &str = "https://ftx.com/api";
@@ -38,6 +38,33 @@ impl FtxApiClient{
         Ok(market)
     }
 
+    pub async fn get_markets(&self) -> Result<Markets, Box<dyn std::error::Error>>{
+        let data: Value = self.request_client.get("https://ftx.com/api/markets")
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        let markets: Markets = serde_json::from_value(data)?; 
+
+        Ok(markets)
+    }
+
+    pub async fn get_markets_filtered(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>{
+        let markets: Markets = self.get_markets().await?;
+        let blacklist  = vec!["DOGE-PERP"];
+        let mut futures_filtered: Vec<String> = Vec::new();
+
+        for i in markets.result{
+            let name = i.name.unwrap();
+            if name.contains("-PERP") && !blacklist.contains(&name.as_str()) && i.volumeUsd24h >= 10000000.0{
+                futures_filtered.push(name);
+            }
+        }
+
+        Ok(futures_filtered)
+    }
+
     pub async fn get_open_positions(&self) -> Result<Vec<Value>, Box<dyn std::error::Error>>{
         let auth_header = self.auth_header("/positions", "GET").unwrap();
         let data: Value = self.request_client.get(format!("https://ftx.com/api/positions"))
@@ -51,8 +78,8 @@ impl FtxApiClient{
     }
 
 
-    pub async fn fetch_historical_data(&self, market: &str, resolution: &str) -> Result<Value, Box<dyn std::error::Error>>{
-        let data: Value = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit=20", market, resolution))
+    pub async fn fetch_historical_data(&self, market: &str, resolution: &str, limit: &str) -> Result<Value, Box<dyn std::error::Error>>{
+        let data: Value = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit={}", market, resolution, limit))
             .send()
             .await?
             .json()

@@ -17,7 +17,7 @@ pub struct BalanceCoin{
 }
 
 impl Balance{
-    pub fn get_USD_Balance(&self) -> [f64; 2]{
+    pub fn get_usd_Balance(&self) -> [f64; 2]{
         let mut balance:[f64;2] = [0.0;2];
 
         for i in &self.result{
@@ -58,28 +58,33 @@ pub struct OrderResult{
 
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Markets{
+    pub success:bool,
+    pub result: Vec<Market>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Market{
-    pub name:String,
+    pub name:Option<String>,
     enabled:bool,
     postOnly:bool,
     priceIncrement:f64,
     sizeIncrement:f64,
-    minProvideSize:f64,
     pub last:f64,
     bid:f64,
     ask:f64,
     price:f64,
-    r#type:String,
-    baseCurrency:Option<String>,
-    quoteCurrency:Option<String>,
-    underlying:String,
+    pub r#type:Option<String>,
+    baseCurrency: Option<String>,
+    quoteCurrency: Option<String>,
+    underlying: Option<String>,
     restricted:bool,
     highLeverageFeeExempt:bool,
     change1h:f64,
     change24h:f64,
     changeBod:f64,
     quoteVolume24h:f64,
-    volumeUsd24h:f64,
+    pub volumeUsd24h:f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

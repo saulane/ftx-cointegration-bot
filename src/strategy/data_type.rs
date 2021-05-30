@@ -1,10 +1,9 @@
-use serde_json::{Value};
+use serde_json::Value;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 #[path = "calculations.rs"]
 mod calculations;
-
-use calculations::ZscoreError;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HistoricalData{
@@ -54,29 +53,25 @@ pub struct Pair{
 
 
 impl Pair{
-    pub fn new(crypto_1_symbol:String, crypto1: &HistoricalData, crypto_2_symbol: String, crypto2: &HistoricalData, max_pos:u32) -> Result<Pair, ZscoreError>{
+    pub fn new(crypto_1_symbol:String, crypto1: &HistoricalData, crypto_2_symbol: String, crypto2: &HistoricalData, max_pos:u32) -> Result<Pair,Box<dyn Error>>{
         let prices_1 = crypto1.prices().unwrap();
         let prices_2 = crypto2.prices().unwrap();
 
         let pair_id = format!("{}/{}", &crypto_1_symbol, &crypto_2_symbol);
 
-        let log_diff = match calculations::log_diff(&prices_1, &prices_2){
-            Ok(logvec) => Ok(logvec),
-            _ => Err(ZscoreError),
-        };
-
+        let log_diff = calculations::log_diff(&prices_1, &prices_2)?;
         Ok(Pair{
             pair: [crypto_1_symbol, crypto_2_symbol],
-            pair_id: pair_id,
+            pair_id,
             crypto_1: crypto1.prices().unwrap(),
             crypto_2: crypto2.prices().unwrap(),
             last_bar_ts: crypto1.result.last().unwrap().time,
-            zscore: calculations::zscore(&log_diff?)?,
+            zscore: calculations::zscore(&log_diff)?,
             max_pos
         })
     }
 
-    pub fn update_zscore(&mut self) -> Result<(), ZscoreError>{
+    pub fn update_zscore(&mut self) -> Result<(), Box<dyn Error>>{
         match calculations::log_diff(&self.crypto_1, &self.crypto_2){
             Ok(log_diff) => {
                 
@@ -85,10 +80,10 @@ impl Pair{
                         self.zscore = zs;
                         return Ok(());
                     },
-                    _ => return Err(ZscoreError),
+                    Err(e) => return Err(e),
                 }
             },
-            _ => return Err(ZscoreError),
+            Err(e)=> return Err(e),
         }
     }
 

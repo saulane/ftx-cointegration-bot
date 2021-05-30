@@ -1,5 +1,7 @@
 pub mod calculations;
 pub mod data_type;
+pub mod coint;
+
 
 use std::{cell::RefCell};
 
