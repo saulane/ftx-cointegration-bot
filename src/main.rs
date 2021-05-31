@@ -12,7 +12,6 @@ use strategy::coint::coint;
 use std::io::Write;
 use std::fs::OpenOptions;
 
-use strategy::coint;
 use std::collections::HashMap;
 use exchange::ftx::rest_api::FtxApiClient;
 use strategy::data_type::{HistoricalData, Pair, Position};
@@ -115,6 +114,11 @@ async fn main(){
         api_secret: API_SECRET.to_string(),
         request_client: reqwest::Client::new()
     };
+
+    // println!("Coint test:{:?}", coint(
+    //     &HistoricalData::new(ftx_bot.fetch_historical_data("BTC-PERP", "900", "1000").await.unwrap()).unwrap().prices().unwrap(),
+    //     &HistoricalData::new(ftx_bot.fetch_historical_data("ETH-PERP", "900", "1000").await.unwrap()).unwrap().prices().unwrap()
+    // ));
 
 
     println!("Pairs Coint:{:?}", coint_pairs_list(&ftx_bot).await);

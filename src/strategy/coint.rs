@@ -12,14 +12,14 @@ fn slope(x: &Vec<f64>, y: &Vec<f64>) -> f64{
     return num/denom
 }
 
-pub fn SE(x: &Vec<f64>, y: &Vec<f64>, slope: &f64) -> f64{
+fn se(x: &Vec<f64>, y: &Vec<f64>, slope: &f64) -> f64{
     //let slope = slope(x,y);
     let mut olsresiduals: Vec<f64> = Vec::new();
     for i in 0..x.len(){
         olsresiduals.push( y[i] - slope * x[i] );
     }
 
-    let mut x_residuals: Vec<f64> = x[1..].to_vec();
+    let x_residuals: Vec<f64> = x[1..].to_vec();
     let mean_x_residuals = mean(&x_residuals);
     let n = olsresiduals.len();
 
@@ -28,7 +28,7 @@ pub fn SE(x: &Vec<f64>, y: &Vec<f64>, slope: &f64) -> f64{
 
     let num = ( olsresiduals.iter().map(|&i| (i.powi(2))).sum::<f64>()  / (n-2) as f64).sqrt();
     let denom = ( x_residuals.iter().map(|&i| ( (i-mean_x_residuals).powi(2) )).sum::<f64>() ).sqrt();
-    //println!("{}", num/denom);
+    // println!("SE: {}", num/denom);
 
     num/denom
 }
@@ -38,31 +38,36 @@ fn mean(x: &Vec<f64>) -> f64{
 }
 
 pub fn tstat(x: &Vec<f64>, y: &Vec<f64>, slope: &f64) -> f64{
-    slope/SE(x, y, slope)
+    let tstat = slope/se(x, y, slope);
+    // println!("{}", tstat);
+    tstat
+    
 }
 
+
 pub fn coint(x: &Vec<f64>, y: &Vec<f64>) -> bool{
-    let critical_value: f64 = -3.91852234;
+    let critical_value: f64 = -3.4369259442540416;
 
     let slope_1 = slope(x,y);
-    //println!("COEF X1: {:?}", &slope_1);
+    // println!("COEF X1: {:?}", &slope_1);
 
-    let mut Z:Vec<f64> = Vec::new();
+    //Difference between Y and the predicted value of the linear regression Z = Y - aX  
+    let mut z:Vec<f64> = Vec::new();
     for i in 0..x.len(){
-        Z.push(y[i] - slope_1 * x[i]);
+        z.push(y[i] - slope_1 * x[i]);
     }
 
 
     let mut delta_resid:Vec<f64>  = Vec::new();
-    for i in 1..Z.len(){
-        delta_resid.push( Z[i] - Z[i-1] );
+    for i in 1..z.len(){
+        delta_resid.push( z[i] - z[i-1] );
     }
 
-    let t1residuals = &Z[..Z.len()-1].to_vec();
+    let t1residuals = &z[..z.len()-1].to_vec();
     
     let slope_2 = slope(&t1residuals, &delta_resid);
 
-    //println!("COEF t1 {:?}", &slope_2);
+    // println!("COEF t1 {:?}", &slope_2);
     match tstat(&t1residuals, &delta_resid, &slope_2){
         val if val <= critical_value => true,
         _ => false
