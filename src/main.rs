@@ -71,7 +71,7 @@ pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiC
 }
 
 
-async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> Vec<[String;2]>{
+async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> (Vec<[String;2]>, Vec<String>){
     let crypto_list = ftx_bot.get_markets_filtered().await.unwrap();
     let mut crypto_data: HashMap<String, HistoricalData> = HashMap::new();
 
@@ -92,15 +92,25 @@ async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> Vec<[String;2]>{
 
 
     let mut coint_pairs:Vec<[String; 2]> = Vec::new();
+    let mut used_crypto:Vec<String> = Vec::new();
 
     for i in possible_pairs{
         if coint(&crypto_data.get(&i[0]).unwrap().prices().unwrap(), &crypto_data.get(&i[1]).unwrap().prices().unwrap()){
+            
+            if !used_crypto.contains(&i[0]){
+                used_crypto.push(i[0].to_string());
+            }
+
+            if !used_crypto.contains(&i[1]){
+                used_crypto.push(i[1].to_string());
+            }
+
             coint_pairs.push(i);
         }   
     }
 
     println!("Number of cointegrated pairs: {:?}",&coint_pairs.len());
-    coint_pairs
+    (coint_pairs, used_crypto)
 }
 
 
@@ -140,15 +150,20 @@ async fn main(){
 
     let pairs_from_file = pairs_reader().unwrap();
 
+    let pairs_coint_test = coint_pairs_list(&ftx_bot).await;
+
     //Pushing every pair in a Vec
     let mut pair_symbol_list: Vec<[&str; 2]> = Vec::new();
     let mut symbol_list: Vec<&str> = Vec::new();
-    for i in pairs_from_file.iter(){
+    for i in pairs_coint_test.0.iter(){
         pair_symbol_list.push([&i[0], &i[1]]);
 
-        if !symbol_list.iter().any(|&j| j ==&i[0]){
-            symbol_list.push(&i[0]);
-            
+        if !symbol_list.iter().any(|&j| j == &i[0]){
+            symbol_list.push(&i[0]);  
+        }
+
+        if !symbol_list.iter().any(|&j| j == &i[1]){
+            symbol_list.push(&i[1]);  
         }
     }
     let mut pair_list: Vec<Pair> = make_pair_list(&pair_symbol_list, &ftx_bot).await.unwrap();
@@ -163,7 +178,7 @@ async fn main(){
 
     //Main Infinite Loop
     'mainloop: loop {
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_secs(5));
         //Iterate over every tradable pairs
         'pairsloop: for p in pair_list.iter_mut(){
             unsafe{
