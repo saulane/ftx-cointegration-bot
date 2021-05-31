@@ -15,7 +15,6 @@ use modules::data_type::{HistoricalData, Pair, Position};
 lazy_static!{
     static ref API_KEY: String = std::env::var("FTX_API_KEY").unwrap();
     static ref API_SECRET: String = std::env::var("FTX_API_SECRET").unwrap();
-    
 }
 
 static mut STOP:bool = false;
