@@ -45,7 +45,11 @@ pub fn tstat(x: &Vec<f64>, y: &Vec<f64>, slope: &f64) -> f64{
 }
 
 
-pub fn coint(x: &Vec<f64>, y: &Vec<f64>) -> bool{
+pub fn coint(x: &Vec<f64>, y: &Vec<f64>) -> Result<bool, Box<dyn std::error::Error>>{
+    if x.len()!= y.len(){
+        return Err("Datas are not the same size!".into());
+    }
+
     let critical_value: f64 = -3.4369259442540416;
 
     let slope_1 = slope(x,y);
@@ -69,7 +73,7 @@ pub fn coint(x: &Vec<f64>, y: &Vec<f64>) -> bool{
 
     // println!("COEF t1 {:?}", &slope_2);
     match tstat(&t1residuals, &delta_resid, &slope_2){
-        val if val <= critical_value => true,
-        _ => false
+        val if val <= critical_value => Ok(true),
+        _ => Ok(false)
     }
 }

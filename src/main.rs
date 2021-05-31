@@ -2,19 +2,15 @@ extern crate reqwest;
 #[macro_use]
 extern crate lazy_static;
 
-mod exchange;
-mod strategy;
-mod lib;
+mod modules;
 
-use lib::utils::pairs_reader;
-use strategy::coint::coint;
-
+use modules::utils;
 use std::io::Write;
 use std::fs::OpenOptions;
 
 use std::collections::HashMap;
-use exchange::ftx::rest_api::FtxApiClient;
-use strategy::data_type::{HistoricalData, Pair, Position};
+use modules::rest_api::FtxApiClient;
+use modules::data_type::{HistoricalData, Pair, Position};
 
 lazy_static!{
     static ref API_KEY: String = std::env::var("FTX_API_KEY").unwrap();
@@ -34,87 +30,6 @@ pub fn is_used(crypto: &str,positions:&HashMap<String, Position>) -> bool{
     return false;
 }
 
-pub async fn make_pair_list(pair_symbol_list: &Vec<[&str; 2]>, ftx_bot: &FtxApiClient) -> Result<Vec<Pair>, ()>{
-    let mut pair_list: Vec<Pair> = Vec::new(); 
-    for i in pair_symbol_list{
-        let mut i_counter = 0;
-        'datafetching: loop{
-            if i_counter != 0{
-                std::thread::sleep(std::time::Duration::from_millis(20));
-            }
-
-            i_counter = i_counter+1;
-
-            let (c1_data,c2_data) =  match (ftx_bot.fetch_historical_data(i[0], "900", "20").await, ftx_bot.fetch_historical_data(i[1], "900", "20").await){
-                (Ok(c1), Ok(c2)) => (c1, c2),
-                _ => continue 'datafetching
-            };
-
-            let (crypto1, crypto2) = match (HistoricalData::new(c1_data), HistoricalData::new(c2_data)){
-                (Ok(c1), Ok(c2)) => (c1, c2),
-                _ => continue 'datafetching
-            };
-
-            let pair_tmp: Pair = match Pair::new(i[0].to_string(),&crypto1, i[1].to_string(),&crypto2, MAX_POS){
-                Ok(newpair) => newpair,
-                _ => continue 'datafetching
-            };
-
-            //println!("Pair: {}{} added", &i[0].to_string(),&i[1].to_string());
-            pair_list.push(pair_tmp);
-            break 'datafetching;
-        }
-
-        std::thread::sleep(std::time::Duration::from_millis(40));
-    }
-    return Ok(pair_list)
-}
-
-
-async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> (Vec<[String;2]>, Vec<String>){
-    let crypto_list = ftx_bot.get_markets_filtered().await.unwrap();
-    let mut crypto_data: HashMap<String, HistoricalData> = HashMap::new();
-
-    for i in &crypto_list{
-        crypto_data.insert(i.to_string(), HistoricalData::new(ftx_bot.fetch_historical_data(i, "900", "1000").await.unwrap()).unwrap());
-    }
-
-    let mut possible_pairs:Vec<[String; 2]> = Vec::new();
-    for i in &crypto_list{
-        for j in &crypto_list{
-            if i != j && !possible_pairs.contains(&[j.to_string(), i.to_string()]){
-                possible_pairs.push([i.to_string(),j.to_string()]);
-            }
-        }
-    }
-
-    println!("Number of pairs created: {:?}",&possible_pairs.len());
-
-
-    let mut coint_pairs:Vec<[String; 2]> = Vec::new();
-    let mut used_crypto:Vec<String> = Vec::new();
-
-    for i in possible_pairs{
-        if coint(&crypto_data.get(&i[0]).unwrap().prices().unwrap(), &crypto_data.get(&i[1]).unwrap().prices().unwrap()){
-            
-            if !used_crypto.contains(&i[0]){
-                used_crypto.push(i[0].to_string());
-            }
-
-            if !used_crypto.contains(&i[1]){
-                used_crypto.push(i[1].to_string());
-            }
-
-            coint_pairs.push(i);
-        }   
-    }
-
-    println!("Number of cointegrated pairs: {:?}",&coint_pairs.len());
-    (coint_pairs, used_crypto)
-}
-
-
-
 #[tokio::main]
 async fn main(){
     let mut file = OpenOptions::new().append(true).open("data.txt").expect("cannot open file");
@@ -131,7 +46,7 @@ async fn main(){
     // ));
 
 
-    println!("Pairs Coint:{:?}", coint_pairs_list(&ftx_bot).await);
+    //println!("Pairs Coint:{:?}", coint_pairs_list(&ftx_bot).await);
 
 
     //listening to CTRL-C in order to stop the program
@@ -148,37 +63,22 @@ async fn main(){
     })
     .expect("Error setting Ctrl-C handler");
 
-    let pairs_from_file = pairs_reader().unwrap();
+    println!("Dernière mise à jour des paires: {}", utils::read_last_pairs_update());
 
-    let pairs_coint_test = coint_pairs_list(&ftx_bot).await;
+    let mut pairs_coint_test = utils::coint_pairs_list(&ftx_bot).await.unwrap();
 
-    //Pushing every pair in a Vec
-    let mut pair_symbol_list: Vec<[&str; 2]> = Vec::new();
-    let mut symbol_list: Vec<&str> = Vec::new();
-    for i in pairs_coint_test.0.iter(){
-        pair_symbol_list.push([&i[0], &i[1]]);
-
-        if !symbol_list.iter().any(|&j| j == &i[0]){
-            symbol_list.push(&i[0]);  
-        }
-
-        if !symbol_list.iter().any(|&j| j == &i[1]){
-            symbol_list.push(&i[1]);  
-        }
-    }
-    let mut pair_list: Vec<Pair> = make_pair_list(&pair_symbol_list, &ftx_bot).await.unwrap();
+    let mut pair_list: Vec<Pair> = utils::make_pair_list(&pairs_coint_test.0, &ftx_bot).await.unwrap();
     let mut positions: HashMap<String, Position> = HashMap::new();
-
-    //let mut last_coint_test_update = current_ts();
-
-
-    println!("PairsList: {:?}, Number of pairs: {}", &pair_symbol_list,&pair_symbol_list.len());
-    println!("CryptoList: {:?}, total in data: {}", &symbol_list, &symbol_list.len());
 
 
     //Main Infinite Loop
     'mainloop: loop {
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        if utils::current_ts() - utils::read_last_pairs_update() >= 86400000{
+            println!("Updating Cointegrated Pairs List");
+            pairs_coint_test = utils::coint_pairs_list(&ftx_bot).await.unwrap();
+            pair_list = utils::make_pair_list(&pairs_coint_test.0, &ftx_bot).await.unwrap();
+        }
+
         //Iterate over every tradable pairs
         'pairsloop: for p in pair_list.iter_mut(){
             unsafe{
@@ -201,22 +101,6 @@ async fn main(){
                 },
                 _ => continue 'pairsloop,
             };
-
-            std::thread::sleep(std::time::Duration::from_millis(100));
-
-
-            // let crypto1 = ftx_bot.get_market(&p.pair[0]).await;
-            // let crypto2 = ftx_bot.get_market(&p.pair[1]).await;
-            // match (crypto1, crypto2){
-            //     (Ok(c1), Ok(c2)) => {
-            //         match p.update_last_prices(c1.last, c2.last){
-            //             Ok(()) => print!(""),
-            //             _ => continue 'pairsloop
-            //         };
-            //     },
-            //     _=> continue 'pairsloop
-            // };
-            // std::thread::sleep(std::time::Duration::from_millis(70));
             
             //Check if the Pair is already in position
             if positions.contains_key(&p.pair_id){
@@ -283,8 +167,12 @@ async fn main(){
                         println!("Pair: {}, Zscore: {}|{}: {}, {}: {}",&p.pair_id, &p.zscore, &p.pair[0],&p.crypto_1.last().unwrap(),&p.pair[1],&p.crypto_2.last().unwrap());
                     }
                 }
-            }   
+            }
+            //Waiting between each pairs to not make more than 30 requests/sec
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
+        //Waiting in order to wait for the API to update OHLC
+        std::thread::sleep(std::time::Duration::from_secs(5));
     }
 
     println!("Program stopped");

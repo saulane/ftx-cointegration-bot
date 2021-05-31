@@ -1,15 +1,13 @@
 extern crate reqwest;
 
+use super::utils;
 
-use crate::lib::{utils};
-
-mod objects;
 
 use serde_json::{Value, json};
 use reqwest::header;
 use std::{collections::HashMap};
 
-use objects::{Balance, Market, OpenPosition, Markets};
+use super::data_type::{Balance, Market, Markets};
 
 
 const API_ENDPOINT: &str = "https://ftx.com/api";
