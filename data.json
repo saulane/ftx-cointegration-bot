@@ -1,0 +1,21 @@
+{
+  "last_update": 1622539200319,
+  "trades": [
+    {
+      "pair": "BTC-PERP/ETH-PERP",
+      "profit": 0.12154312
+    },
+    {
+      "pair": "1INCH-PERP/BAND-PERP",
+      "profit": -0.07
+    },
+    {
+      "pair": "ADA-PERP/COMP-PERP",
+      "profit": -0.07
+    },
+    {
+      "pair": "BCH-PERP/SXP-PERP",
+      "profit": -0.07
+    }
+  ]
+}

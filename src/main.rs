@@ -31,8 +31,6 @@ pub fn is_used(crypto: &str,positions:&HashMap<String, Position>) -> bool{
 
 #[tokio::main]
 async fn main(){
-    let mut file = OpenOptions::new().append(true).open("data.txt").expect("cannot open file");
-
     let ftx_bot =  FtxApiClient{
         api_key: API_KEY.to_string(),
         api_secret: API_SECRET.to_string(),
@@ -111,9 +109,8 @@ async fn main(){
 
                         let crypto1_profit = if &positions[&p.pair_id].crypto1_size >= &0.0 { p.crypto_1.last().unwrap()/&positions[&p.pair_id].crypto1_entry_price - 1.0 } else { &positions[&p.pair_id].crypto1_entry_price/p.crypto_1.last().unwrap() - 1.0 };
                         let crypto2_profit = if &positions[&p.pair_id].crypto2_size >= &0.0 { p.crypto_2.last().unwrap()/&positions[&p.pair_id].crypto2_entry_price - 1.0 } else { &positions[&p.pair_id].crypto2_entry_price/p.crypto_2.last().unwrap() - 1.0 };
-
-                        let trade_res = format!("{}, {}\n", &p.pair_id, (&crypto1_profit+&crypto2_profit-0.07/100.0)*100.0);
-                        file.write_all(trade_res.as_bytes()).expect("write failed");
+                        
+                        utils::save_trade(&p.pair_id, (&crypto1_profit+&crypto2_profit-0.07/100.0)*100.0);
                         //writeln!(&mut file, "{}", &trade_res).unwrap();
                         positions.remove(&p.pair_id);
 

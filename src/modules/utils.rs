@@ -4,11 +4,12 @@ use sha2::Sha256;
 use hmac::{Hmac, Mac, NewMac};
 
 use csv::StringRecord;
+use tungstenite::protocol::frame::coding::Data;
 use std::fs;
 use std::error::Error;
 use std::collections::HashMap;
 
-use super::data_type::{Pair, HistoricalData, LastPairsUpdate};
+use super::data_type::{Pair, HistoricalData, DataFile, Trade};
 use super::rest_api::FtxApiClient;
 use super::coint::coint;
 
@@ -125,26 +126,52 @@ pub async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> Result<(Vec<[String;2]>
         }   
     }
 
-    let path = std::path::Path::new("last_update.json");
-    let file = fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)    
+    let path = std::path::Path::new("data.json");
+    let read_file = fs::OpenOptions::new()
+        .read(true)
         .open(path).expect("Unable to read file");
 
-    let last_pairs_update: LastPairsUpdate = LastPairsUpdate{last_update: current_ts()};
-    serde_json::to_writer_pretty(&file, &last_pairs_update);
+    let res: DataFile = serde_json::from_reader(&read_file).expect("Unable to open file");
+
+    let write_file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(path).expect("Unable to write file");
+
+    let new_data: DataFile = DataFile{last_update: current_ts(), trades: res.trades};
+    serde_json::to_writer_pretty(&write_file, &new_data);
 
 
     println!("Number of cointegrated pairs: {:?}",&coint_pairs.len());
     Ok((coint_pairs, used_crypto))
 }
 
+pub fn save_trade(pair: &String, profit: f64){
+
+    let path = std::path::Path::new("data.json");
+    let read_file = fs::OpenOptions::new()
+        .read(true)
+        .open(path).expect("Unable to read file");
+
+    let mut res: DataFile = serde_json::from_reader(&read_file).expect("Unable to open file");
+    res.trades.push(Trade{pair: pair.to_string(), profit: profit});
+
+    let write_file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(path).expect("Unable to write file");
+
+
+    serde_json::to_writer_pretty(&write_file, &res);
+}
+
 pub fn read_last_pairs_update() -> u128{
-    let path = std::path::Path::new("last_update.json");
+    let path = std::path::Path::new("data.json");
 
     let data = fs::File::open(path).expect("Unable to read file");
-    let res:LastPairsUpdate = serde_json::from_reader(&data).expect("Unable to serialize data");
+    let res:DataFile = serde_json::from_reader(&data).expect("Unable to serialize data");
 
     res.last_update
 }

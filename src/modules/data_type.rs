@@ -6,9 +6,17 @@ use super::calculations;
 
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LastPairsUpdate{
-    pub last_update: u128
+pub struct DataFile{
+    pub last_update: u128,
+    pub trades: Vec<Trade>,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Trade{
+    pub pair: String,
+    pub profit: f64,
+}
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HistoricalData{
