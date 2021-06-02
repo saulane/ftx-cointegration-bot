@@ -107,7 +107,9 @@ pub async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> Result<(Vec<[String;2]>
     let mut coint_pairs:Vec<[String; 2]> = Vec::new();
     let mut used_crypto:Vec<String> = Vec::new();
 
+    
     for i in possible_pairs{
+        println!("Pairs: {:?}",&i);
         let test_coint = match coint(&crypto_data.get(&i[0]).unwrap().prices().unwrap(), &crypto_data.get(&i[1]).unwrap().prices().unwrap()){
             Ok(val) => val,
             _ => continue,

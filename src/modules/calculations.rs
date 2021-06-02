@@ -1,14 +1,7 @@
 use std::error::Error;
 
-fn mean(data: &Vec<f64>) -> Option<f64>{
-    // let data = &self.diff_history.borrow().clone();
-    let sum = data.iter().sum::<f64>() as f64;
-    let count = data.len();
-
-    match count{
-        notempty if notempty>=20 => Some(sum/count as f64),
-        _ => None,
-    }
+pub fn mean(data: &Vec<f64>) -> Option<f64>{
+    Some(data.iter().sum::<f64>() as f64/ data.len() as f64)
 }
 
 pub fn zscore(data: &Vec<f64>) -> Result<f64, Box<dyn Error>>{
