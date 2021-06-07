@@ -3,39 +3,7 @@
   "trades": [
     {
       "pair": "BTC-PERP/ETH-PERP",
-      "profit": 0.12154312
-    },
-    {
-      "pair": "BSV-PERP/LTC-PERP",
-      "profit": -0.03850433599425374
-    },
-    {
-      "pair": "ATOM-PERP/BNB-PERP",
-      "profit": 0.12189343874365444
-    },
-    {
-      "pair": "BCH-PERP/ETC-PERP",
-      "profit": 0.08024793015273934
-    },
-    {
-      "pair": "ATOM-PERP/BNB-PERP",
-      "profit": 0.4316371312510016
-    },
-    {
-      "pair": "ADA-PERP/LUNA-PERP",
-      "profit": -0.597035048579646
-    },
-    {
-      "pair": "BCH-PERP/ETC-PERP",
-      "profit": -0.2596693848929287
-    },
-    {
-      "pair": "BNB-PERP/CAKE-PERP",
-      "profit": -0.14
-    },
-    {
-      "pair": "AVAX-PERP/DEFI-PERP",
-      "profit": -0.23448233972748633
+      "profit": 0.0
     }
   ]
 }
