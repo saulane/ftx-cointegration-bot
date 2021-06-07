@@ -101,8 +101,10 @@ impl Pair{
     }
 
     pub fn update_prices(&mut self, crypto_1: &HistoricalData, crypto_2: &HistoricalData) -> Result<(), ()>{
-        self.crypto_1 = crypto_1.prices().unwrap();
-        self.crypto_2 = crypto_2.prices().unwrap();
+        let _old_crypto1 = std::mem::replace(&mut self.crypto_1, crypto_1.prices().unwrap());
+        let _old_crypto2 = std::mem::replace(&mut self.crypto_2, crypto_2.prices().unwrap());
+        // self.crypto_1 = crypto_1.prices().unwrap();
+        // self.crypto_2 = crypto_2.prices().unwrap();
         self.last_bar_ts = crypto_1.result.last().unwrap().time;
 
         match self.update_zscore(){
