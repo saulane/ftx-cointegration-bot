@@ -4,13 +4,12 @@ extern crate lazy_static;
 
 mod modules;
 
-use modules::utils;
-use std::io::Write;
-use std::fs::OpenOptions;
-
 use std::collections::HashMap;
 use modules::rest_api::FtxApiClient;
 use modules::data_type::{HistoricalData, Pair, Position};
+use modules::utils;
+
+use serde_json::Value;
 
 lazy_static!{
     static ref API_KEY: String = std::env::var("FTX_API_KEY").unwrap();
@@ -37,16 +36,8 @@ async fn main(){
         request_client: reqwest::Client::new()
     };
 
-    // println!("Coint test:{:?}", coint(
-    //     &HistoricalData::new(ftx_bot.fetch_historical_data("BTC-PERP", "900", "1000").await.unwrap()).unwrap().prices().unwrap(),
-    //     &HistoricalData::new(ftx_bot.fetch_historical_data("ETH-PERP", "900", "1000").await.unwrap()).unwrap().prices().unwrap()
-    // ));
+    println!("Positions Ouvertes: {:?}", ftx_bot.get_open_positions().await.unwrap().into_iter().filter(|i| i["future"] == "ETH-PERP").collect::<Vec<Value>>()  );
 
-
-    //println!("Pairs Coint:{:?}", coint_pairs_list(&ftx_bot).await);
-
-
-    //listening to CTRL-C in order to stop the program
     ctrlc::set_handler(move || {
         unsafe{
             if STOP == true{
@@ -55,7 +46,6 @@ async fn main(){
             }
             STOP = true;
             println!("Stopping Program!");
-
         }
     })
     .expect("Error setting Ctrl-C handler");
@@ -110,8 +100,7 @@ async fn main(){
                         let crypto1_profit = if &positions[&p.pair_id].crypto1_size >= &0.0 { p.crypto_1.last().unwrap()/&positions[&p.pair_id].crypto1_entry_price - 1.0 } else { &positions[&p.pair_id].crypto1_entry_price/p.crypto_1.last().unwrap() - 1.0 };
                         let crypto2_profit = if &positions[&p.pair_id].crypto2_size >= &0.0 { p.crypto_2.last().unwrap()/&positions[&p.pair_id].crypto2_entry_price - 1.0 } else { &positions[&p.pair_id].crypto2_entry_price/p.crypto_2.last().unwrap() - 1.0 };
                         
-                        utils::save_trade(&p.pair_id, (&crypto1_profit+&crypto2_profit-0.07/100.0)*100.0);
-                        //writeln!(&mut file, "{}", &trade_res).unwrap();
+                        utils::save_trade(&p.pair_id, (&crypto1_profit+&crypto2_profit-0.14/100.0)*100.0);
                         positions.remove(&p.pair_id);
 
                         // let close_order1 = ftx_bot.post_order(&p.pair[0],0.0, curr_crypto1_pos_size, "market", true).await;
@@ -124,7 +113,7 @@ async fn main(){
                         //     _ => println!("Problem closing position on exchange")
                         // }
                     }else{
-                        println!("Open Position on {}, zscore = {}", &p.pair_id, &p.zscore);
+                        println!("Open Trade on {}, zs={}, | {} x {}, {} x {}", &p.pair_id, &p.zscore, &p.crypto_1.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto1_size,&p.crypto_2.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto2_size );
                     }
                 }
             }else{
@@ -157,10 +146,10 @@ async fn main(){
                                 //     _ => println!("Error posting order to api")
                                 // }
                             },
-                            _ => println!("Not enough money!"),
+                            _ => println!("Not enough money on balance!"),
                         }
                     }else{
-                        println!("Pair: {}, Zscore: {}|{}: {}, {}: {}",&p.pair_id, &p.zscore, &p.pair[0],&p.crypto_1.last().unwrap(),&p.pair[1],&p.crypto_2.last().unwrap());
+                        // println!("Pair: {}, Zscore: {}|{}: {}, {}: {}",&p.pair_id, &p.zscore, &p.pair[0],&p.crypto_1.last().unwrap(),&p.pair[1],&p.crypto_2.last().unwrap());
                     }
                 }
             }
@@ -168,7 +157,7 @@ async fn main(){
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
         //Waiting in order to wait for the API to update OHLC
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_secs(10));
     }
 
     println!("Program stopped");

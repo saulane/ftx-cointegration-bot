@@ -84,10 +84,8 @@ pub fn coint(x: &Vec<f64>, y: &Vec<f64>) -> Result<bool, Box<dyn std::error::Err
     // On décale Z de 1 rang
     let t1_xy_residuals:Vec<f64> = ols_xy_residuals[..ols_xy_residuals.len()-1].to_vec();
 
-    // Regression linear entre Z décalé de 1 et Z[i] - Z[i-1]
+    // Regression lineaire entre Z décalé de 1 et Z[i] - Z[i-1]
     let ols_delta_t1: LinearRegression = LinearRegression::new(t1_xy_residuals.to_vec(), delta_xy_residuals, t1_xy_residuals.len())?;
-    println!("tstat calculée avec struct: {}", ols_delta_t1.tstat());
-
 
     match ols_delta_t1.tstat(){
         val if val <= critical_value => Ok(true),

@@ -121,7 +121,7 @@ impl Pair{
         }
     }
 
-    pub fn position_size(&self, freeBalance: &f64, totalBalance: &f64) -> Option<[f64;2]>{
+    pub fn position_size(&self, free_balance: &f64, total_balance: &f64) -> Option<[f64;2]>{
         match self.zscore{
                 zscore if zscore.abs()>1.5 => {
                     let crypto_1_price: &f64 = self.crypto_1.last().unwrap();
@@ -130,10 +130,10 @@ impl Pair{
                     let c1_len:f64 = (10.0 as f64).powi(10 * calculations::number_of_tens(crypto_1_price) as i32);
                     let c2_len:f64 = (10.0 as f64).powi(10 * calculations::number_of_tens(crypto_2_price) as i32);
 
-                    let total_with_leverage: f64 = totalBalance*15.0;
-                    let free_with_leverage: f64 = freeBalance*15.0;
+                    let total_with_leverage: f64 = total_balance*5.0;
+                    let free_with_leverage: f64 = free_balance*5.0;
             
-                    let each_pos_size: f64 = (0.8/2.0/self.max_pos as f64)* &total_with_leverage;
+                    let each_pos_size: f64 = (0.9/2.0/self.max_pos as f64)* &total_with_leverage;
             
                     let crypto_1_size: f64 = ((&each_pos_size/crypto_1_price)*c1_len).floor()/c1_len;
                     let crypto_2_size: f64 = ((&each_pos_size/crypto_2_price)*c2_len).floor()/c2_len;
