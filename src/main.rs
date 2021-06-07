@@ -154,7 +154,7 @@ async fn main(){
                 }
             }
             //Waiting between each pairs to not make more than 30 requests/sec
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            std::thread::sleep(std::time::Duration::from_millis(500));
         }
         //Waiting in order to wait for the API to update OHLC
         std::thread::sleep(std::time::Duration::from_secs(10));
