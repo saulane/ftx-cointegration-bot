@@ -1,9 +1,15 @@
 {
-  "last_update": 1623033109070,
+  "last_update": 1623163602332,
   "trades": [
     {
-      "pair": "BTC-PERP/ETH-PERP",
-      "profit": 0.0
+      "pair": "ATOM-PERP/CAKE-PERP",
+      "profit": -0.14,
+      "time": 1623163628099
+    },
+    {
+      "pair": "BCH-PERP/CHZ-PERP",
+      "profit": -0.14,
+      "time": 1623163631421
     }
   ]
 }

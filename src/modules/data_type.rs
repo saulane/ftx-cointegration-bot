@@ -15,6 +15,7 @@ pub struct DataFile{
 pub struct Trade{
     pub pair: String,
     pub profit: f64,
+    pub time: u128
 }
 
 

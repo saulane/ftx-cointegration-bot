@@ -140,7 +140,7 @@ pub async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> Result<(Vec<[String;2]>
         .open(path).expect("Unable to write file");
 
     let new_data: DataFile = DataFile{last_update: current_ts(), trades: res.trades};
-    serde_json::to_writer_pretty(&write_file, &new_data);
+    let _writer = serde_json::to_writer_pretty(&write_file, &new_data).expect("Unable to write file");
 
 
     println!("Number of cointegrated pairs: {:?}",&coint_pairs.len());
@@ -155,7 +155,7 @@ pub fn save_trade(pair: &String, profit: f64){
         .open(path).expect("Unable to read file");
 
     let mut res: DataFile = serde_json::from_reader(&read_file).expect("Unable to open file");
-    res.trades.push(Trade{pair: pair.to_string(), profit: profit});
+    res.trades.push(Trade{pair: pair.to_string(), profit: profit, time: current_ts()});
 
     let write_file = fs::OpenOptions::new()
         .create(true)
@@ -164,7 +164,7 @@ pub fn save_trade(pair: &String, profit: f64){
         .open(path).expect("Unable to write file");
 
 
-    serde_json::to_writer_pretty(&write_file, &res);
+    let _writer = serde_json::to_writer_pretty(&write_file, &res).expect("Unable to save trade");
 }
 
 pub fn read_last_pairs_update() -> u128{
