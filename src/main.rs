@@ -9,7 +9,6 @@ use modules::rest_api::FtxApiClient;
 use modules::data_type::{HistoricalData, Pair, Position};
 use modules::utils;
 
-use serde_json::Value;
 
 lazy_static!{
     static ref API_KEY: String = std::env::var("FTX_API_KEY").unwrap();
@@ -17,7 +16,7 @@ lazy_static!{
 }
 
 static mut STOP:bool = false;
-static MAX_POS: u32 = 3;
+static MAX_POS: u32 = 4;
 
 pub fn is_used(crypto: &str,positions:&HashMap<String, Position>) -> bool{
     for k in positions.keys(){
@@ -36,7 +35,7 @@ async fn main(){
         request_client: reqwest::Client::new()
     };
 
-    println!("Positions Ouvertes: {:?}", ftx_bot.get_open_positions().await.unwrap().into_iter().filter(|i| i["future"] == "ETH-PERP").collect::<Vec<Value>>()  );
+    println!("Positions Ouvertes: {:?}", ftx_bot.get_open_position("BTC-PERP").await.unwrap());
 
     ctrlc::set_handler(move || {
         unsafe{
@@ -113,7 +112,7 @@ async fn main(){
                         //     _ => println!("Problem closing position on exchange")
                         // }
                     }else{
-                        println!("Open Trade on {}, zs={}, | {} x {}, {} x {}", &p.pair_id, &p.zscore, &p.crypto_1.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto1_size,&p.crypto_2.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto2_size );
+                        println!("{}: Open Trade on {}, zs={}, | {} x {}, {} x {}",utils::current_ts(), &p.pair_id, &p.zscore, &p.crypto_1.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto1_size,&p.crypto_2.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto2_size );
                     }
                 }
             }else{
@@ -154,7 +153,7 @@ async fn main(){
                 }
             }
             //Waiting between each pairs to not make more than 30 requests/sec
-            std::thread::sleep(std::time::Duration::from_millis(500));
+            std::thread::sleep(std::time::Duration::from_millis(150));
         }
         //Waiting in order to wait for the API to update OHLC
         std::thread::sleep(std::time::Duration::from_secs(10));

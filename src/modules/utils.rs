@@ -1,10 +1,9 @@
 extern crate hex;
-use std::time::{SystemTime};
+use std::time::SystemTime;
 use sha2::Sha256;
 use hmac::{Hmac, Mac, NewMac};
 
 use csv::StringRecord;
-use tungstenite::protocol::frame::coding::Data;
 use std::fs;
 use std::error::Error;
 use std::collections::HashMap;
@@ -101,7 +100,7 @@ pub async fn coint_pairs_list(ftx_bot: &FtxApiClient) -> Result<(Vec<[String;2]>
         }
     }
 
-    println!("Number of pairs created: {:?}",&possible_pairs.len());
+    println!("{}: Number of pairs created: {:?}", current_ts(), &possible_pairs.len());
 
     let mut coint_pairs:Vec<[String; 2]> = Vec::new();
     let mut used_crypto:Vec<String> = Vec::new();

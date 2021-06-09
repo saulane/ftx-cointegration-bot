@@ -75,6 +75,13 @@ impl FtxApiClient{
         Ok(data["result"].as_array().unwrap().to_vec())
     }
 
+    pub async fn get_open_position(&self, future: &str) -> Result<Value, Box<dyn std::error::Error>>{
+        let pos = match self.get_open_positions().await.unwrap().into_iter().filter(|i| i["future"] == future).collect::<Vec<Value>>(){
+            posvec if posvec.len() > 0 => posvec[0].to_owned(),
+            _ => return Err(format!("No position found on cypto: {}", future).into())
+        };
+        Ok(pos)
+    }
 
     pub async fn fetch_historical_data(&self, market: &str, resolution: &str, limit: &str) -> Result<Value, Box<dyn std::error::Error>>{
         let data: Value = self.request_client.get(format!("https://ftx.com/api/markets/{}/candles?resolution={}&limit={}", market, resolution, limit))
