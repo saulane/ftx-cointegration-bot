@@ -91,7 +91,7 @@ async fn main(){
             //Check if the Pair is already in position
             if positions.contains_key(&p.pair_id){
                 unsafe{
-                    if p.zscore.abs() <= 0.5 || STOP == true{            
+                    if (p.zscore.abs() <= 0.5 || STOP == true) && !positions.get(&p.pair_id).unwrap().will_close{            
                         println!("Closing Trade on pair: {}, zscore={}", &p.pair_id, &p.zscore);
                         let curr_crypto1_pos_size = -&positions[&p.pair_id].crypto1_size;
                         let curr_crypto2_pos_size = -&positions[&p.pair_id].crypto2_size;
@@ -100,17 +100,30 @@ async fn main(){
                         let crypto2_profit = if &positions[&p.pair_id].crypto2_size >= &0.0 { p.crypto_2.last().unwrap()/&positions[&p.pair_id].crypto2_entry_price - 1.0 } else { &positions[&p.pair_id].crypto2_entry_price/p.crypto_2.last().unwrap() - 1.0 };
                         
                         utils::save_trade(&p.pair_id, (&crypto1_profit+&crypto2_profit-0.14/100.0)*100.0);
-                        positions.remove(&p.pair_id);
+                        //positions.remove(&p.pair_id);
 
                         // let close_order1 = ftx_bot.post_order(&p.pair[0],0.0, curr_crypto1_pos_size, "market", true).await;
                         // let close_order2 = ftx_bot.post_order(&p.pair[1],0.0, curr_crypto2_pos_size, "market", true).await;
+                        positions.get_mut(&p.pair_id).unwrap().will_close = true;
 
                         // match (close_order1, close_order2){
                         //     (Ok(_res1), Ok(_res2)) => {
-                        //         positions.remove(&p.pair_id);
+                        //        println!("Close Orders for {} successfully posted on exchange",
+                        //        &p.pair_id); 
                         //     },
                         //     _ => println!("Problem closing position on exchange")
                         // }
+                    }else if positions.get(&p.pair_id).unwrap().will_close {
+                        let crypto_1_pos = ftx_bot.get_open_position(&p.pair[0]).await;
+                        let crypto_2_pos = ftx_bot.get_open_position(&p.pair[1]).await;
+                        match (crypto_1_pos, crypto_2_pos){
+                            (Ok(c1p), Ok(c2p)) if c1p["size"] != 0.0 || c2p["size"] != 0.0 => println!("Position {} still not closed on the exchange", &p.pair_id),
+                            _ =>{
+                                positions.remove(&p.pair_id);
+                                println!("Position on {} successfully closed!", &p.pair_id)
+                            } 
+                        }
+
                     }else{
                         println!("{}: Open Trade on {}, zs={}, | {} x {}, {} x {}",utils::current_ts(), &p.pair_id, &p.zscore, &p.crypto_1.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto1_size,&p.crypto_2.last().unwrap(), &positions.get(&p.pair_id).unwrap().crypto2_size );
                     }
@@ -153,7 +166,7 @@ async fn main(){
                 }
             }
             //Waiting between each pairs to not make more than 30 requests/sec
-            std::thread::sleep(std::time::Duration::from_millis(150));
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
         //Waiting in order to wait for the API to update OHLC
         std::thread::sleep(std::time::Duration::from_secs(10));

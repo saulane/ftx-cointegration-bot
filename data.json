@@ -1,5 +1,25 @@
 {
-  "last_update": 1623237034007,
+  "last_update": 1623249670987,
   "trades": [
- ]
+    {
+      "pair": "CAKE-PERP/DOT-PERP",
+      "profit": -0.14,
+      "time": 1623249697134
+    },
+    {
+      "pair": "KIN-PERP/MATIC-PERP",
+      "profit": -0.04832098642499217,
+      "time": 1623249698598
+    },
+    {
+      "pair": "ATOM-PERP/BNB-PERP",
+      "profit": -0.14,
+      "time": 1623249709870
+    },
+    {
+      "pair": "AVAX-PERP/LUNA-PERP",
+      "profit": -0.22952551477170446,
+      "time": 1623249710551
+    }
+  ]
 }

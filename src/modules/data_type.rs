@@ -115,8 +115,8 @@ impl Pair{
     }
 
     pub fn update_last_prices(&mut self ,crypto1_last: f64, crypto2_last: f64) -> Result<(), ()>{
-        std::mem::replace(self.crypto_1.last_mut().unwrap(), crypto1_last);
-        std::mem::replace(self.crypto_2.last_mut().unwrap(), crypto2_last);
+        let _old_last_price_1 = std::mem::replace(self.crypto_1.last_mut().unwrap(), crypto1_last);
+        let _old_last_price_2 = std::mem::replace(self.crypto_2.last_mut().unwrap(), crypto2_last);
 
         match self.update_zscore(){
             Ok(()) => Ok(()),
@@ -136,13 +136,13 @@ impl Pair{
                     let total_with_leverage: f64 = total_balance*5.0;
                     let free_with_leverage: f64 = free_balance*5.0;
             
-                    let each_pos_size: f64 = (0.9/2.0/self.max_pos as f64)* &total_with_leverage;
+                    let each_pos_size: f64 = (0.45/self.max_pos as f64)* &total_with_leverage;
             
                     let crypto_1_size: f64 = ((&each_pos_size/crypto_1_price)*c1_len).floor()/c1_len;
                     let crypto_2_size: f64 = ((&each_pos_size/crypto_2_price)*c2_len).floor()/c2_len;
             
-                    match (free_with_leverage, total_with_leverage){
-                        (free, total) if free >= 2.0*each_pos_size=> {
+                    match free_with_leverage{
+                        free if free >= 2.0*each_pos_size=> {
                             match self.zscore{
                                 zs if zs<0.0 => Some([crypto_1_size, -crypto_2_size]),
                                 zs if zs>=0.0 => Some([-crypto_1_size, crypto_2_size]),
@@ -169,6 +169,7 @@ pub struct Position{
     pub zscore: f64,
     pub crypto1_size: f64,
     pub crypto2_size: f64,
+    pub will_close: bool,
 }
 
 impl Position{
@@ -181,6 +182,7 @@ impl Position{
             zscore,
             crypto1_size,
             crypto2_size,
+            will_close: false,
         }
     }
 
