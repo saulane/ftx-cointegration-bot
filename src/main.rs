@@ -102,17 +102,17 @@ async fn main(){
                         utils::save_trade(&p.pair_id, (&crypto1_profit+&crypto2_profit-0.14/100.0)*100.0);
                         //positions.remove(&p.pair_id);
 
-                        // let close_order1 = ftx_bot.post_order(&p.pair[0],0.0, curr_crypto1_pos_size, "market", true).await;
-                        // let close_order2 = ftx_bot.post_order(&p.pair[1],0.0, curr_crypto2_pos_size, "market", true).await;
+                         let close_order1 = ftx_bot.post_order(&p.pair[0],0.0, curr_crypto1_pos_size, "market", true).await;
+                         let close_order2 = ftx_bot.post_order(&p.pair[1],0.0, curr_crypto2_pos_size, "market", true).await;
                         positions.get_mut(&p.pair_id).unwrap().will_close = true;
 
-                        // match (close_order1, close_order2){
-                        //     (Ok(_res1), Ok(_res2)) => {
-                        //        println!("Close Orders for {} successfully posted on exchange",
-                        //        &p.pair_id); 
-                        //     },
-                        //     _ => println!("Problem closing position on exchange")
-                        // }
+                        match (close_order1, close_order2){
+                            (Ok(_res1), Ok(_res2)) => {
+                               println!("Close Orders for {} successfully posted on exchange",
+                               &p.pair_id); 
+                            },
+                            _ => println!("Problem closing position on exchange")
+                        }
                     }else if positions.get(&p.pair_id).unwrap().will_close {
                         let crypto_1_pos = ftx_bot.get_open_position(&p.pair[0]).await;
                         let crypto_2_pos = ftx_bot.get_open_position(&p.pair[1]).await;
@@ -146,17 +146,17 @@ async fn main(){
                         match &p.position_size(&curr_balance.get_usd_Balance()[0], &curr_balance.get_usd_Balance()[1]){
                             Some(size) => {
                                 let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
-                                positions.insert(p.pair_id.to_string(), new_pos);
-                                // let order1 = ftx_bot.post_order(&p.pair[0],0.0, size[0], "market", false).await;
-                                // let order2 = ftx_bot.post_order(&p.pair[1],0.0, size[1], "market", false).await;
+                                 //positions.insert(p.pair_id.to_string(), new_pos);
+                                 let order1 = ftx_bot.post_order(&p.pair[0],0.0, size[0], "market", false).await;
+                                 let order2 = ftx_bot.post_order(&p.pair[1],0.0, size[1], "market", false).await;
 
-                                // match (order1, order2){
-                                //     (Ok(_res1), Ok(_res2)) => {
-                                //         let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
-                                //         positions.insert(p.pair_id.to_string(), new_pos);
-                                //     },
-                                //     _ => println!("Error posting order to api")
-                                // }
+                                 match (order1, order2){
+                                     (Ok(_res1), Ok(_res2)) => {
+                                         let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
+                                         positions.insert(p.pair_id.to_string(), new_pos);
+                                     },
+                                     _ => println!("Error posting order to api")
+                                 }
                             },
                             _ => println!("Not enough money on balance!"),
                         }

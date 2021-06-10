@@ -136,7 +136,7 @@ impl Pair{
                     let total_with_leverage: f64 = total_balance*5.0;
                     let free_with_leverage: f64 = free_balance*5.0;
             
-                    let each_pos_size: f64 = (0.45/self.max_pos as f64)* &total_with_leverage;
+                    let each_pos_size: f64 = (0.4/self.max_pos as f64)* &total_with_leverage;
             
                     let crypto_1_size: f64 = ((&each_pos_size/crypto_1_price)*c1_len).floor()/c1_len;
                     let crypto_2_size: f64 = ((&each_pos_size/crypto_2_price)*c2_len).floor()/c2_len;
