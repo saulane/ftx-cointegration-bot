@@ -1,45 +1,5 @@
 {
   "last_update": 1623336562411,
   "trades": [
-    {
-      "pair": "CAKE-PERP/DOT-PERP",
-      "profit": -0.14,
-      "time": 1623249697134
-    },
-    {
-      "pair": "KIN-PERP/MATIC-PERP",
-      "profit": -0.04832098642499217,
-      "time": 1623249698598
-    },
-    {
-      "pair": "ATOM-PERP/BNB-PERP",
-      "profit": -0.14,
-      "time": 1623249709870
-    },
-    {
-      "pair": "AVAX-PERP/LUNA-PERP",
-      "profit": -0.2295255147717045,
-      "time": 1623249710551
-    },
-    {
-      "pair": "AAVE-PERP/ZEC-PERP",
-      "profit": -0.17957309065694138,
-      "time": 1623336672125
-    },
-    {
-      "pair": "BCH-PERP/XRP-PERP",
-      "profit": -0.22765851043552876,
-      "time": 1623336673667
-    },
-    {
-      "pair": "BSV-PERP/FTT-PERP",
-      "profit": -0.2617670476275856,
-      "time": 1623336674742
-    },
-    {
-      "pair": "DEFI-PERP/ETC-PERP",
-      "profit": 0.14640722071651135,
-      "time": 1623336676125
-    }
-  ]
+    ]
 }
