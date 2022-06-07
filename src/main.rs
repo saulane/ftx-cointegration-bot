@@ -146,7 +146,7 @@ async fn main(){
                         match &p.position_size(&curr_balance.get_usd_Balance()[0], &curr_balance.get_usd_Balance()[1]){
                             Some(size) => {
                                 let new_pos = Position::new([p.pair[0].to_string(), p.pair[1].to_string()], *p.crypto_1.last().unwrap(), *p.crypto_2.last().unwrap(), p.zscore, size[0], size[1]);
-                                 //positions.insert(p.pair_id.to_string(), new_pos);
+                                 positions.insert(p.pair_id.to_string(), new_pos);
                                  let order1 = ftx_bot.post_order(&p.pair[0],0.0, size[0], "market", false).await;
                                  let order2 = ftx_bot.post_order(&p.pair[1],0.0, size[1], "market", false).await;
 

@@ -49,15 +49,23 @@ impl FtxApiClient{
     }
 
     pub async fn get_markets_filtered(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>{
-        let markets: Markets = self.get_markets().await?;
+        let markets: Markets = self.get_markets().await.unwrap();
         let blacklist  = vec!["DOGE-PERP", "DEFI-PERP", "BNB-PERP"];
         let mut futures_filtered: Vec<String> = Vec::new();
 
         for i in markets.result{
             let name = i.name.unwrap();
-            if name.contains("-PERP") && !blacklist.contains(&name.as_str()) && i.volumeUsd24h >= 10000000.0{
-                futures_filtered.push(name);
+            match i.volumeUsd24h{
+                Some(x) => {
+                    if name.contains("-PERP") && !blacklist.contains(&name.as_str()) && x >= 10000000.0{
+                        futures_filtered.push(name);
+                    }
+                },
+                _ => {
+                    
+                }
             }
+            
         }
 
         Ok(futures_filtered)
